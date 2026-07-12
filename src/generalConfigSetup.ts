@@ -4,9 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ResponseInterceptor } from './shared/interceptors/response.interceptor';
 
-interface ConfigSetupProps {
-  app: INestApplication<any>;
-}
+
 interface AppOptions {
   serviceName: string;
   prefix?: string;
@@ -48,7 +46,7 @@ const log = new Logger("app-setup")
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document, {
+  SwaggerModule.setup('api/v1/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
     },
