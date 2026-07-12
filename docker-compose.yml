@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:alpine
+    container_name: medqueue-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: medqueue  # Customizing the DB name for this project
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  redis:
+    image: redis:alpine
+    container_name: medqueue-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: medqueue-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@medqueue.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"  # Access via http://localhost:5050
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: medqueue-mailhog
+    ports:
+      - "1025:1025"  # SMTP port for NestJS
+      - "8025:8025"  # Web UI (http://localhost:8025)
+    networks:
+      - app-network
+    restart: unless-stopped
+
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  app-network:
+    driver: bridge
