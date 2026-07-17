@@ -8,10 +8,10 @@ import { MailService } from 'src/infrastructure/mail/mail.service';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategies';
+import { GoogleStrategy } from "./strategies/google.strategies";
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, MailService, JwtStrategy],
   imports: [
     TypeOrmModule.forFeature([Auth]),
     MailModule,
@@ -21,6 +21,7 @@ import { JwtStrategy } from './strategies/jwt.strategies';
     }),
   ],
 
-  exports: [JwtStrategy, PassportModule],
+  exports: [JwtStrategy, PassportModule],  providers: [AuthService, MailService, JwtStrategy, GoogleStrategy],
+
 })
 export class AuthModule {}

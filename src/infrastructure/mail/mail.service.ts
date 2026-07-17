@@ -1,10 +1,10 @@
-
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import * as handlebars from 'handlebars';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { ForgotPasswordType } from 'src/types/auth';
 
 @Injectable()
 export class MailService implements OnModuleInit {
@@ -22,19 +22,35 @@ export class MailService implements OnModuleInit {
 
   async onModuleInit() {
     try {
-      const layoutPath = path.join(process.cwd(), 'templates', 'mail', 'layouts', 'main.hbs');
+      const layoutPath = path.join(
+        process.cwd(),
+        'templates',
+        'mail',
+        'layouts',
+        'main.hbs',
+      );
       const layoutRaw = await fs.readFile(layoutPath, 'utf-8');
       this.compiledLayout = handlebars.compile(layoutRaw);
     } catch (err) {
-      this.logger.error('Failed initialization compilation of master email layout engine', err.stack);
+      this.logger.error(
+        'Failed initialization compilation of master email layout engine',
+        err.stack,
+      );
     }
   }
 
-  private async compileTemplate(templateName: string, context: any): Promise<string> {
-    const templatePath = path.join(process.cwd(), 'templates', 'mail', `${templateName}.hbs`);
+  private async compileTemplate(
+    templateName: string,
+    context: any,
+  ): Promise<string> {
+    const templatePath = path.join(
+      process.cwd(),
+      'templates',
+      'mail',
+      `${templateName}.hbs`,
+    );
     const rawTemplate = await fs.readFile(templatePath, 'utf-8');
     const compiledBody = handlebars.compile(rawTemplate)(context);
-
 
     return this.compiledLayout({
       body: compiledBody,
@@ -42,7 +58,11 @@ export class MailService implements OnModuleInit {
     });
   }
 
-  async sendVerificationOtp(email: string, firstName: string, otp: string): Promise<void> {
+  async sendVerificationOtp(
+    email: string,
+    firstName: string,
+    otp: string,
+  ): Promise<void> {
     const htmlBody = await this.compileTemplate('verify-otp', {
       firstName,
       otp,
@@ -50,7 +70,10 @@ export class MailService implements OnModuleInit {
     });
 
     const mailOptions = {
-      from: this.configService.get<string>('SMTP_FROM', '"MedQueue" <noreply@medqueue.com>'),
+      from: this.configService.get<string>(
+        'SMTP_FROM',
+        '"MedQueue" <noreply@medqueue.com>',
+      ),
       to: email,
       subject: 'Verify Your MedQueue Account',
       html: htmlBody,
@@ -58,9 +81,43 @@ export class MailService implements OnModuleInit {
 
     try {
       await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Template-compiled email successfully sent out to: ${email}`);
+      this.logger.log(
+        `Template-compiled email successfully sent out to: ${email}`,
+      );
     } catch (error) {
-      this.logger.error(`Failed delivery pipeline execution to ${email}`, error.stack);
+      this.logger.error(
+        `Failed delivery pipeline execution to ${email}`,
+        error.stack,
+      );
+      throw new Error('Email engine failed execution loop');
+    }
+  }
+
+  async sendForgotPasswordOtp(payload: ForgotPasswordType) {
+    const htmlBody = await  this.compileTemplate('forgot-password', {
+      firstName: payload.firstName,
+      email: payload.email,
+      resetToken: payload.resetToken,
+    });
+
+    const mailOptions = {
+      from: this.configService.getOrThrow(
+        'SMTP_FROM',
+        '"MedQueue" noreply@medqueue.com',
+      ),
+      to: payload.email,
+      subject: 'MedQueue - forgot password',
+      html: htmlBody,
+    };
+    try {
+      await this.transporter.sendMail(mailOptions);
+
+      this.logger.log('email sent successfully to ' + payload.email);
+    } catch (error) {
+      this.logger.error(
+        `Failed delivery pipeline execution to ${payload.email}`,
+        error.stack,
+      );
       throw new Error('Email engine failed execution loop');
     }
   }

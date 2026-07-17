@@ -52,7 +52,8 @@ export class Auth {
     nullable: true,
   })
   profileImage: string;
-
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  googleId?: string;
   @Column({
     nullable: true,
     type: 'date',
@@ -61,7 +62,7 @@ export class Auth {
 
   @Column({
     default: 1,
-    nullable:true
+    nullable: true,
   })
   tokenVersion: number;
   @Column({

@@ -4,11 +4,12 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { RegisterUserDto } from './dto/create-user.dto';
 import { Repository } from 'typeorm';
-import { Auth } from './entities/auth.entity';
+import { Auth, UserRole } from './entities/auth.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MailService } from 'src/infrastructure/mail/mail.service';
 import Redis from 'ioredis';
@@ -21,6 +22,13 @@ import { ConfigService } from '@nestjs/config';
 import { ValidatePayloadTypes } from './auth.types';
 import { version } from 'os';
 import { UAParser } from 'ua-parser-js';
+import {
+  ChangePasswordDto,
+  ForgotPasswordDto,
+  RefreshTokenDto,
+  ResetPasswordDto,
+} from './dto/common-auth.dto';
+import { ForgotPasswordType } from 'src/types/auth';
 @Injectable()
 export class AuthService {
   constructor(
@@ -115,7 +123,7 @@ export class AuthService {
       },
     });
 
-    if (!user) {
+    if (!user?.password) {
       throw new ConflictException('email or password is invalid');
     }
 
@@ -125,7 +133,11 @@ export class AuthService {
 
     let isPassword;
     if (user.password) {
-      isPassword = bcrypt.compare(loginDto.password, user.password);
+      isPassword = await bcrypt.compare(loginDto.password, user.password);
+    }
+
+    if (!isPassword) {
+      throw new ConflictException('password mismatched');
     }
     const payload = {
       id: user.id,
@@ -173,8 +185,278 @@ export class AuthService {
       refreshToken,
     };
   }
-  findAll() {
-    return `This action returns all auth`;
+
+  async validateOrCreateGoogleUser(
+    googleUser: {
+      googleId: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      profileImage: string;
+    },
+    userAgentString: string,
+    ipAddress: string,
+  ) {
+    // 1. Look up existing user
+    let user = await this.authRepository.findOne({
+      where: {
+        email: googleUser.email,
+      },
+    });
+
+    if (user) {
+      // SCENARIO A: User exists but hasn't linked Google yet
+      if (!user.googleId) {
+        user.googleId = googleUser.googleId;
+
+        if (googleUser.profileImage && !user.profileImage) {
+          user.profileImage = googleUser.profileImage;
+        }
+        if (!user.isVerified) {
+          user.isVerified = true;
+        }
+        user = await this.authRepository.save(user);
+      }
+    } else {
+      // SCENARIO B: User does not exist at all -> Create a brand new account
+      const newUser = this.authRepository.create({
+        firstName: googleUser.firstName,
+        lastName: googleUser.lastName,
+        email: googleUser.email,
+        profileImage: googleUser.profileImage,
+        googleId: googleUser.googleId,
+        isVerified: true,
+        role: UserRole.PATIENT,
+      });
+
+      user = await this.authRepository.save(newUser);
+    }
+
+    const parser = new UAParser(userAgentString);
+    const browser = parser.getBrowser().name || 'Unknown Browser';
+    const os = parser.getOS().name || 'Unknown OS';
+    const deviceType = parser.getDevice().type || 'Desktop';
+    const deviceName = `${browser} on ${os} (${deviceType})`;
+
+    const payload = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      tokenVersion: user.tokenVersion,
+    };
+
+    const { accessToken, refreshToken } = await this.generateTokens(payload);
+
+    const sessionIdentifier = Date.now().toString();
+    const redisSessionKey = `user:sessions:${user.id}:${sessionIdentifier}`;
+
+    const sessionMetadata = {
+      deviceName,
+      ipAddress,
+      refreshToken: refreshToken,
+      createdAt: new Date().toISOString(),
+    };
+
+    await this.redisClient.set(
+      redisSessionKey,
+      JSON.stringify(sessionMetadata),
+      'EX',
+      604800,
+    );
+
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        id: user.id,
+      },
+    };
+  }
+
+  async refreshTokenUpdate(token: RefreshTokenDto) {
+    let decoded: any;
+
+    try {
+      decoded = await this.jwtService.verifyAsync(token.refreshToken, {
+        secret: this.configService.getOrThrow<string>('JWT_SECRET'),
+      });
+    } catch (error) {
+      throw new UnauthorizedException('session timed out. log in again');
+    }
+
+    const user = await this.authRepository.findOne({
+      where: {
+        id: decoded.id,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Session Timed Out. Sign in again');
+    }
+
+    if (decoded.tokenVersion !== user.tokenVersion) {
+      throw new UnauthorizedException('Session Timed out. Sign Again');
+    }
+    const payload: ValidatePayloadTypes = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      tokenVersion: user.tokenVersion,
+    };
+
+    const { accessToken, refreshToken } = await this.generateTokens(payload);
+
+    return { accessToken, refreshToken };
+  }
+
+  async changePassword(id: string, dto: ChangePasswordDto) {
+    const user = await this.authRepository.findOne({
+      where: {
+        id,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException(
+        'you are not authorized to access this endpoint',
+      );
+    }
+    if (!user.password) {
+      throw new BadRequestException(
+        'this account probably uses a google account. activate recovery on google',
+      );
+    }
+    let isPasswordCorrect: any;
+
+    if (user.password) {
+      isPasswordCorrect = await bcrypt.compare(dto.password, user.password);
+    }
+
+    if (!isPasswordCorrect) {
+      throw new BadRequestException('Old Password Mismatched or invalid');
+    }
+
+    const hashPassword = await bcrypt.hash(dto.newPassword, 12);
+
+    user.password = hashPassword;
+    user.tokenVersion += 1;
+    await this.authRepository.save(user);
+    return {
+      message: 'password updated successfully',
+    };
+  }
+  async logout(id: string) {
+    await this.authRepository.update(id, {
+      tokenVersion: () => `"tokenVersion" + 1`,
+    });
+    return {
+      message: 'logout successfully',
+    };
+  }
+
+  async getMe(id: string) {
+    const user = await this.authRepository.findOne({
+      where: {
+        id,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('no user with the id');
+    }
+
+    return {
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+      },
+    };
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.authRepository.findOne({
+      where: {
+        email: dto.email,
+      },
+    });
+
+    if (!user) {
+      return {
+        message: `if this email exists, a message with the reset token has been sent to: ${dto.email}`,
+      };
+    }
+    const resetToken = randomBytes(32).toString('hex');
+    const redisKey = `password-reset:${resetToken}`;
+
+    await this.redisClient.set(redisKey, user.email, 'EX', 300);
+    const payload: ForgotPasswordType = {
+      email: user.email,
+      firstName: user.firstName,
+      resetToken,
+    };
+    await this.mailService.sendForgotPasswordOtp(payload);
+
+    return {
+      message: `if this email exists, a message with the reset token has been sent to: ${dto.email}`,
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const redisKey = `password-reset:${dto.token}`;
+    const redisEmail = await this.redisClient.get(redisKey);
+
+    if (!redisEmail) {
+      throw new BadRequestException('Token invalid or expired');
+    }
+
+    if (redisEmail !== dto.email) {
+      throw new BadRequestException('invalid email for this request');
+    }
+    const user = await this.authRepository.findOne({
+      where: {
+        email: redisEmail,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('invalid email for this request');
+    }
+
+    const hashPassword = await bcrypt.hash(dto.password, 12);
+
+    user.password = hashPassword;
+    user.tokenVersion += 1;
+
+    await this.authRepository.save(user);
+    await this.redisClient.del(redisKey);
+    return {
+      message: 'password reset successfully',
+    };
+  }
+
+  async deleteUser(id: string) {
+    const user = await this.authRepository.delete({
+      id,
+    });
+    if (user.affected === 0) {
+      throw new BadRequestException('invalid user id');
+    }
+
+    return {
+      id,
+    };
+  }
+  async findAllUser() {
+    const users = await this.authRepository.find();
+    if (!users || users.length === 0) {
+      return 'No users found';
+    }
+    return users;
   }
 
   findOne(id: number) {
