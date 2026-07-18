@@ -1,21 +1,28 @@
-import { 
-  IsEnum, 
-  IsNotEmpty, 
-  IsString, 
-  IsEmail, 
-  IsOptional, 
-  IsNumber, 
-  IsObject, 
-  IsArray, 
-  Max, 
-  Min 
-} from 'class-validator';
-import { FacilityType, type WeeklySchedule } from "../hospital.types";
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsEnum, IsObject, IsNumber, Min, Max, IsOptional, IsArray } from 'class-validator';
+import { FacilityType,type WeeklySchedule } from "../hospital.types";
 
-export class CreateHospitalDto {
+export class RegisterHospitalDto {
+  // --- Core User Account Fields ---
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
+  @IsNotEmpty()
+  @MinLength(8, { message: 'Password must be at least 8 characters long' })
+  password: string;
+
   @IsNotEmpty()
   @IsString()
-  name: string;
+  firstName: string; // Acts as Admin First Name for the contact person
+
+  @IsNotEmpty()
+  @IsString()
+  lastName: string;  // Acts as Admin Last Name for the contact person
+
+  // --- Hospital Profile Fields ---
+  @IsNotEmpty()
+  @IsString()
+  hospitalName: string;
 
   @IsNotEmpty()
   @IsEnum(FacilityType)
@@ -24,10 +31,6 @@ export class CreateHospitalDto {
   @IsNotEmpty()
   @IsString()
   licenseNumber: string;
-
-  @IsNotEmpty()
-  @IsEmail()
-  email: string;
 
   @IsNotEmpty()
   @IsString()

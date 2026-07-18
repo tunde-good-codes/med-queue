@@ -1,14 +1,16 @@
-import { 
-  Entity, 
-  PrimaryGeneratedColumn, 
-  Column, 
-  CreateDateColumn, 
-  UpdateDateColumn, 
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
   Index,
-  BeforeInsert
+  BeforeInsert,
+  OneToOne,
+  JoinColumn,
 } from 'typeorm';
-import { FacilityType, type WeeklySchedule } from "../hospital.types";
-
+import { FacilityType, type WeeklySchedule } from '../hospital.types';
+import { Auth } from 'src/modules/auth/entities/auth.entity';
 
 @Entity('hospitals')
 export class Hospital {
@@ -22,7 +24,11 @@ export class Hospital {
   @Column({ type: 'varchar', length: 255 })
   slug: string;
 
-  @Column({ type: 'enum', enum: FacilityType, default: FacilityType.GENERAL_HOSPITAL })
+  @Column({
+    type: 'enum',
+    enum: FacilityType,
+    default: FacilityType.GENERAL_HOSPITAL,
+  })
   type: FacilityType;
 
   @Column({ type: 'varchar', unique: true, length: 100 })
@@ -71,6 +77,18 @@ export class Hospital {
   @Column({ type: 'varchar', nullable: true })
   logoUrl: string;
 
+  @OneToOne(() => Auth, (user) => user.hospitalProfile, { onDelete: 'CASCADE' })
+  @JoinColumn({
+    name: 'userId',
+  })
+  user: Auth;
+
+  @Index()
+  @Column({
+    type: 'uuid',
+    nullable: true,
+  })
+  userId: string;
   // --- Timestamps ---
   @CreateDateColumn()
   createdAt: Date;

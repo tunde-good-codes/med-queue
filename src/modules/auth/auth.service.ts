@@ -29,6 +29,9 @@ import {
   ResetPasswordDto,
 } from './dto/common-auth.dto';
 import { ForgotPasswordType } from 'src/types/auth';
+import { DataSource } from 'typeorm/browser';
+import { RegisterHospitalDto } from '../hospitals/dtos/create-hospital.dto';
+import { Hospital } from '../hospitals/entities/hospital.entities';
 @Injectable()
 export class AuthService {
   constructor(
@@ -39,6 +42,8 @@ export class AuthService {
     private readonly redisClient: Redis,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+
+    private readonly datasource: DataSource,
   ) {}
   async registerNewUser(registerUserDto: RegisterUserDto) {
     const existingUser = await this.authRepository.findOne({
@@ -81,6 +86,71 @@ export class AuthService {
     };
   }
 
+  async registerNewHospital(dto: RegisterHospitalDto) {
+    const queryRunner = this.datasource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const existingUser = await queryRunner.manager.findOne(Auth, {
+        where: {
+          email: dto.email,
+        },
+      });
+
+      if (existingUser) {
+        throw new ConflictException(
+          'An account with this email already exists',
+        );
+      }
+
+      const hashedPassword = await bcrypt.hash(dto.password, 12);
+      const user = queryRunner.manager.create(Auth, {
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        email: dto.email,
+        password: hashedPassword,
+        phoneNumber: dto.phone,
+        role: UserRole.HOSPITAL,
+        isVerified: false,
+      });
+
+      const savedUser = await queryRunner.manager.save(Auth, user);
+      const hospital = queryRunner.manager.create(Hospital, {
+        userId: savedUser.id,
+        name: dto.hospitalName,
+        type: dto.type,
+        licenseNumber: dto.licenseNumber,
+        email: dto.email,
+        phone: dto.phone,
+        website: dto.website,
+        city: dto.city,
+        state: dto.state,
+        streetAddress: dto.streetAddress,
+        zipCode: dto.zipCode,
+        latitude: dto.latitude,
+        longitude: dto.longitude,
+        operatingHours: dto.operatingHours,
+        acceptedInsuranceProviders: dto.acceptedInsuranceProviders,
+        maxCapacity: dto.maxCapacity,
+      });
+
+      await queryRunner.manager.save(Hospital, hospital);
+      const otp = randomInt(100000, 999999).toString();
+
+      const redisKey = `otp:${dto.email}`;
+      await this.redisClient.set(redisKey, otp, 'EX', 300);
+
+      this.mailService.sendVerificationOtp(dto.email, dto.firstName, otp);
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
   async verifyOtp(verifyOtpDto: VerifyOtpDto) {
     const redisKey = `otp:${verifyOtpDto.email}`;
     const savedOtp = await this.redisClient.get(redisKey);

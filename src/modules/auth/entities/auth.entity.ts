@@ -1,7 +1,9 @@
+import { Hospital } from 'src/modules/hospitals/entities/hospital.entities';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -70,6 +72,11 @@ export class Auth {
     default: false,
   })
   isVerified: boolean;
+
+  @OneToOne(() => Hospital, (hospital) => hospital.user, {
+    onDelete: 'CASCADE',
+  })
+  hospitalProfile: Hospital;
 
   @CreateDateColumn()
   createdAt: Date;
