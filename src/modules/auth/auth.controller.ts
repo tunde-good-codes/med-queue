@@ -36,6 +36,10 @@ import {
   ResetPasswordDto,
 } from './dto/common-auth.dto';
 import { JwtAuthGuard } from 'src/shared/guards/JwtAuthGuard';
+import { RolesGuard } from 'src/shared/guards/roles.guard';
+import { Roles } from 'src/shared/decorators/roles.decorator';
+import { UserRole } from './entities/auth.entity';
+import { RegisterHospitalDto } from '../hospitals/dtos/create-hospital.dto';
 
 @ApiTags('auth service')
 @Controller('auth')
@@ -130,36 +134,34 @@ export class AuthController {
 
   @ApiGetService('delete a  user')
   @ResponseMessage('this user has been deleted')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Delete('delete-user/:id')
   async deleteUser(@Param('id', ParseUUIDPipe) id: string) {
     return await this.authService.deleteUser(id);
   }
   @Get('users')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.PATIENT)
   @ResponseMessage('all users fetched')
   @ApiGetService('get all  user')
   findAll() {
     return this.authService.findAllUser();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.authService.findOne(+id);
+  @ApiCreate('new hospital creation', RegisterHospitalDto)
+  @ResponseMessage('hospital created successfully')
+  @Post('sign-up/hospital')
+  async registerHospital(@Body() dto: RegisterHospitalDto) {
+    return await this.authService.registerNewHospital(dto);
   }
-
   @ApiPost('change password', ChangePasswordDto)
   @ResponseMessage('password changed completed')
   @Post('change-password')
   @UseGuards(JwtAuthGuard)
   async changePassword(@Req() req: any, @Body() dto: ChangePasswordDto) {
-    return await this.authService.changePassword(req.user.id, dto);
-  }
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-    return this.authService.update(+id, updateAuthDto);
-  }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.authService.remove(+id);
+    
+    return await this.authService.changePassword(req.user.id, dto);
   }
 }

@@ -6,9 +6,8 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { UpdateAuthDto } from './dto/update-auth.dto';
 import { RegisterUserDto } from './dto/create-user.dto';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Auth, UserRole } from './entities/auth.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MailService } from 'src/infrastructure/mail/mail.service';
@@ -20,8 +19,8 @@ import { LoginDto } from './dto/login-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { ValidatePayloadTypes } from './auth.types';
-import { version } from 'os';
 import { UAParser } from 'ua-parser-js';
+import slugify from 'slugify';
 import {
   ChangePasswordDto,
   ForgotPasswordDto,
@@ -29,9 +28,8 @@ import {
   ResetPasswordDto,
 } from './dto/common-auth.dto';
 import { ForgotPasswordType } from 'src/types/auth';
-import { DataSource } from 'typeorm/browser';
 import { RegisterHospitalDto } from '../hospitals/dtos/create-hospital.dto';
-import { Hospital } from '../hospitals/entities/hospital.entities';
+import { Hospital } from '../hospitals/entities/hospital.entity';
 @Injectable()
 export class AuthService {
   constructor(
@@ -115,7 +113,9 @@ export class AuthService {
         role: UserRole.HOSPITAL,
         isVerified: false,
       });
-
+      const slug = slugify(dto.hospitalName, {
+        lower: true,
+      });
       const savedUser = await queryRunner.manager.save(Auth, user);
       const hospital = queryRunner.manager.create(Hospital, {
         userId: savedUser.id,
@@ -134,6 +134,7 @@ export class AuthService {
         operatingHours: dto.operatingHours,
         acceptedInsuranceProviders: dto.acceptedInsuranceProviders,
         maxCapacity: dto.maxCapacity,
+        slug,
       });
 
       await queryRunner.manager.save(Hospital, hospital);
@@ -144,6 +145,13 @@ export class AuthService {
 
       this.mailService.sendVerificationOtp(dto.email, dto.firstName, otp);
       await queryRunner.commitTransaction();
+
+      return {
+        message:
+          'Registration successful. Please check your email for verification code',
+        email: dto.email,
+        hospitalName: dto.hospitalName,
+      };
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -187,11 +195,11 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto, userAgentString: string, ipAddress: string) {
-    const user = await this.authRepository.findOne({
-      where: {
-        email: loginDto.email,
-      },
-    });
+    const user = await this.authRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.email = :email', { email: loginDto.email })
+      .getOne();
 
     if (!user?.password) {
       throw new ConflictException('email or password is invalid');
@@ -383,11 +391,15 @@ export class AuthService {
   }
 
   async changePassword(id: string, dto: ChangePasswordDto) {
-    const user = await this.authRepository.findOne({
-      where: {
+
+    
+    const user = await this.authRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.id=:id', {
         id,
-      },
-    });
+      })
+      .getOne();
 
     if (!user) {
       throw new UnauthorizedException(
@@ -444,6 +456,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        role: user.role,
       },
     };
   }
@@ -522,23 +535,14 @@ export class AuthService {
     };
   }
   async findAllUser() {
-    const users = await this.authRepository.find();
+    const [users, total] = await this.authRepository.findAndCount();
     if (!users || users.length === 0) {
       return 'No users found';
     }
-    return users;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
-
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+    return {
+      total,
+      users,
+    };
   }
 
   async generateTokens(payload: ValidatePayloadTypes) {

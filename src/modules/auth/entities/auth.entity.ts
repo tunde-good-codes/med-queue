@@ -1,4 +1,4 @@
-import { Hospital } from 'src/modules/hospitals/entities/hospital.entities';
+import { Hospital } from 'src/modules/hospitals/entities/hospital.entity';
 import {
   Column,
   CreateDateColumn,
@@ -23,10 +23,7 @@ export class Auth {
     nullable: true,
   })
   email: string;
-
-  @Column({
-    nullable: true,
-  })
+  @Column({ nullable: true, select: false })
   password?: string;
   @Column({
     nullable: true,
