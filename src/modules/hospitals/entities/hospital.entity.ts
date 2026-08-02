@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import {
   FacilityType,
+  HospitalImage,
   HospitalVerificationStatus,
   type WeeklySchedule,
 } from '../hospital.types';
@@ -84,9 +85,9 @@ export class Hospital {
 
   @Column({ type: 'text', nullable: true })
   rejectionReason: string | null;
-  @Column({ type: 'varchar', nullable: true })
-  logoUrl: string;
 
+  @Column({ type: 'jsonb', default: [] })
+  images: HospitalImage[];
   @OneToOne(() => Auth, (user) => user.hospitalProfile, { onDelete: 'CASCADE' })
   @JoinColumn({
     name: 'userId',

@@ -6,8 +6,12 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Post,
   Query,
+  Req,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { HospitalsService } from './hospitals.service';
 import { ApiTags } from '@nestjs/swagger';
@@ -24,6 +28,8 @@ import { UserRole } from '../auth/entities/auth.entity';
 import { Roles } from 'src/shared/decorators/roles.decorator';
 import { RejectHospitalDto } from './dtos/reject-hospital.dto';
 import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
+import { FilesInterceptor } from "@nestjs/platform-express";
+import { imageUploadOptions } from "src/shared/config/multer.config";
 
 @Controller('hospitals')
 @ApiTags('Hospital Service')
@@ -75,4 +81,17 @@ export class HospitalsController {
   ) {
     return this.hospitalService.rejectHospital(id, dto);
   }
+
+
+
+@Post(':id/images')
+@UseGuards(JwtAuthGuard, RolesGuard, HospitalOwnershipGuard)
+@Roles(UserRole.HOSPITAL, UserRole.ADMIN)
+@UseInterceptors(FilesInterceptor('images', 5, imageUploadOptions))
+async uploadImages(
+  @Req() req: any,
+  @UploadedFiles() files: Express.Multer.File[],
+) {
+  return this.hospitalService.uploadImages(req.hospital, files);
+}
 }

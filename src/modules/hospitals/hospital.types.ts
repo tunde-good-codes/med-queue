@@ -27,3 +27,10 @@ export enum HospitalVerificationStatus {
   VERIFIED = 'verified',
   REJECTED = 'rejected',
 }
+
+
+
+export interface HospitalImage {
+  url: string;
+  publicId: string;
+}

@@ -14,6 +14,8 @@ import {
   Res,
   ParseUUIDPipe,
   Query,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
@@ -41,7 +43,9 @@ import { RolesGuard } from 'src/shared/guards/roles.guard';
 import { Roles } from 'src/shared/decorators/roles.decorator';
 import { UserRole } from './entities/auth.entity';
 import { RegisterHospitalDto } from '../hospitals/dtos/create-hospital.dto';
-import { PaginationQueryDto } from "src/shared/dto/pagination-query.dto";
+import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { imageUploadOptions } from 'src/shared/config/multer.config';
 
 @ApiTags('auth service')
 @Controller('auth')
@@ -147,7 +151,7 @@ export class AuthController {
   @Roles(UserRole.ADMIN, UserRole.PATIENT)
   @ResponseMessage('all users fetched')
   @ApiGetService('get all  user')
-  findAll(@Query() query:PaginationQueryDto) {
+  findAll(@Query() query: PaginationQueryDto) {
     return this.authService.findAllUser(query);
   }
 
@@ -162,8 +166,19 @@ export class AuthController {
   @Post('change-password')
   @UseGuards(JwtAuthGuard)
   async changePassword(@Req() req: any, @Body() dto: ChangePasswordDto) {
-
-    
     return await this.authService.changePassword(req.user.id, dto);
+  }
+
+  @Post('me/image')
+  
+  @ApiGetService('upload a user image')
+  @ResponseMessage('"user image uploaded"')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('image', imageUploadOptions))
+  async uploadProfileImage(
+    @Req() req: any,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.authService.uploadProfileImage(req.user.id, file);
   }
 }

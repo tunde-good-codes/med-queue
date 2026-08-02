@@ -31,6 +31,7 @@ import { ForgotPasswordType } from 'src/types/auth';
 import { RegisterHospitalDto } from '../hospitals/dtos/create-hospital.dto';
 import { Hospital } from '../hospitals/entities/hospital.entity';
 import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
+import { CloudinaryService } from "src/infrastructure/cloudinary/cloudinary.service";
 @Injectable()
 export class AuthService {
   constructor(
@@ -42,7 +43,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
 
-    private readonly datasource: DataSource,
+    private readonly datasource: DataSource,    private readonly cloudinaryService: CloudinaryService,
+    
   ) {}
   async registerNewUser(registerUserDto: RegisterUserDto) {
     const existingUser = await this.authRepository.findOne({
@@ -555,6 +557,24 @@ export class AuthService {
     };
   }
 
+
+  // auth.service.ts — add cloudinaryService to constructor
+async uploadProfileImage(userId: string, file: Express.Multer.File) {
+  if (!file) {
+    throw new BadRequestException('Image file is required');
+  }
+
+  const user = await this.authRepository.findOne({ where: { id: userId } });
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+
+  const uploaded = await this.cloudinaryService.upload(file, `users/${userId}`);
+  user.profileImage = uploaded.url;
+  await this.authRepository.save(user);
+
+  return { message: 'Profile image updated', profileImage: uploaded.url };
+}
   async generateTokens(payload: ValidatePayloadTypes) {
     const refreshTokenKey = randomBytes(16).toString('hex');
 

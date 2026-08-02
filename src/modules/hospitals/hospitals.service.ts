@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -11,11 +12,13 @@ import slugify from 'slugify';
 import { HospitalVerificationStatus } from './hospital.types';
 import { RejectHospitalDto } from './dtos/reject-hospital.dto';
 import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
+import { CloudinaryService } from 'src/infrastructure/cloudinary/cloudinary.service';
 @Injectable()
 export class HospitalsService {
   constructor(
     @InjectRepository(Hospital)
     private readonly hospitalRepository: Repository<Hospital>,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async getAllHospital(pagination: PaginationQueryDto) {
@@ -37,7 +40,9 @@ export class HospitalsService {
 
     return {
       total,
-      page,limit, totalPages : Math.floor(total/limit),
+      page,
+      limit,
+      totalPages: Math.floor(total / limit),
       hospitals,
     };
   }
@@ -148,5 +153,30 @@ export class HospitalsService {
     await this.hospitalRepository.save(hospital);
 
     return { hospital };
+  }
+
+  async uploadImages(
+    hospital: Hospital,
+    files: Express.Multer.File[],
+  ): Promise<Hospital> {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('At least one image is required');
+    }
+
+    const totalAfter = hospital.images.length + files.length;
+    if (totalAfter > 5) {
+      throw new BadRequestException(
+        `Upload would exceed the 5-image limit (currently has ${hospital.images.length}, tried to add ${files.length})`,
+      );
+    }
+
+    const uploaded = await Promise.all(
+      files.map((file) =>
+        this.cloudinaryService.upload(file, `hospitals/${hospital.id}`),
+      ),
+    );
+
+    hospital.images = [...hospital.images, ...uploaded];
+    return this.hospitalRepository.save(hospital);
   }
 }

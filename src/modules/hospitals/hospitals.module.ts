@@ -5,6 +5,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { Hospital } from "./entities/hospital.entity";
 import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
+import { CloudinaryModule } from "src/infrastructure/cloudinary/cloudinary.module";
 
 @Module({
   controllers: [HospitalsController],
@@ -13,7 +14,7 @@ import { PassportModule } from "@nestjs/passport";
       JwtModule.register({}),
       PassportModule.register({
         defaultStrategy: 'jwt',
-      }),
+      }),CloudinaryModule
     ],
 })
 export class HospitalsModule {}

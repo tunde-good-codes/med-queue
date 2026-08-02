@@ -1,3 +1,4 @@
+import { CloudinaryModule } from 'src/infrastructure/cloudinary/cloudinary.module';
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
@@ -18,7 +19,7 @@ import { GoogleStrategy } from './strategies/google.strategies';
     JwtModule.register({}),
     PassportModule.register({
       defaultStrategy: 'jwt',
-    }),
+    }),CloudinaryModule
   ],
 
   exports: [JwtStrategy, PassportModule],
