@@ -30,6 +30,7 @@ import {
 import { ForgotPasswordType } from 'src/types/auth';
 import { RegisterHospitalDto } from '../hospitals/dtos/create-hospital.dto';
 import { Hospital } from '../hospitals/entities/hospital.entity';
+import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
 @Injectable()
 export class AuthService {
   constructor(
@@ -391,8 +392,6 @@ export class AuthService {
   }
 
   async changePassword(id: string, dto: ChangePasswordDto) {
-
-    
     const user = await this.authRepository
       .createQueryBuilder('user')
       .addSelect('user.password')
@@ -534,13 +533,24 @@ export class AuthService {
       id,
     };
   }
-  async findAllUser() {
-    const [users, total] = await this.authRepository.findAndCount();
+  async findAllUser(pagination: PaginationQueryDto) {
+    const { page = 1, limit = 10 } = pagination;
+
+    const skip = (page - 1) * limit;
+    const [users, total] = await this.authRepository.findAndCount({
+      where: {
+        isVerified: true,
+      },
+      skip,
+      take: limit,
+      order: { createdAt: 'desc' },
+    });
     if (!users || users.length === 0) {
-      return 'No users found';
+      throw new NotFoundException('no user found!');
     }
     return {
       total,
+      limit,page, totalPages:Math.floor(total/limit),
       users,
     };
   }

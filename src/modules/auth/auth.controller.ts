@@ -13,6 +13,7 @@ import {
   UseGuards,
   Res,
   ParseUUIDPipe,
+  Query,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
@@ -40,6 +41,7 @@ import { RolesGuard } from 'src/shared/guards/roles.guard';
 import { Roles } from 'src/shared/decorators/roles.decorator';
 import { UserRole } from './entities/auth.entity';
 import { RegisterHospitalDto } from '../hospitals/dtos/create-hospital.dto';
+import { PaginationQueryDto } from "src/shared/dto/pagination-query.dto";
 
 @ApiTags('auth service')
 @Controller('auth')
@@ -145,8 +147,8 @@ export class AuthController {
   @Roles(UserRole.ADMIN, UserRole.PATIENT)
   @ResponseMessage('all users fetched')
   @ApiGetService('get all  user')
-  findAll() {
-    return this.authService.findAllUser();
+  findAll(@Query() query:PaginationQueryDto) {
+    return this.authService.findAllUser(query);
   }
 
   @ApiCreate('new hospital creation', RegisterHospitalDto)

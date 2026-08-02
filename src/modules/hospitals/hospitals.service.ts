@@ -10,6 +10,7 @@ import { UpdateHospitalDto } from './dtos/update-hospital.dto';
 import slugify from 'slugify';
 import { HospitalVerificationStatus } from './hospital.types';
 import { RejectHospitalDto } from './dtos/reject-hospital.dto';
+import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
 @Injectable()
 export class HospitalsService {
   constructor(
@@ -17,15 +18,26 @@ export class HospitalsService {
     private readonly hospitalRepository: Repository<Hospital>,
   ) {}
 
-  async getAllHospital() {
-    const [hospitals, total] = await this.hospitalRepository.findAndCount();
+  async getAllHospital(pagination: PaginationQueryDto) {
+    const { limit = 10, page = 1 } = pagination;
+
+    const skip = (page - 1) * limit;
+    const [hospitals, total] = await this.hospitalRepository.findAndCount({
+      // where: {
+      //   verificationStatus: HospitalVerificationStatus.VERIFIED,
+      // },
+      order: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    });
 
     if (!hospitals || hospitals.length === 0) {
-      return 'no hospital found';
+      throw new NotFoundException('no hospital found at this time');
     }
 
     return {
       total,
+      page,limit, totalPages : Math.floor(total/limit),
       hospitals,
     };
   }
