@@ -9,7 +9,11 @@ import {
   OneToOne,
   JoinColumn,
 } from 'typeorm';
-import { FacilityType, type WeeklySchedule } from '../hospital.types';
+import {
+  FacilityType,
+  HospitalVerificationStatus,
+  type WeeklySchedule,
+} from '../hospital.types';
 import { Auth } from 'src/modules/auth/entities/auth.entity';
 
 @Entity('hospitals')
@@ -71,9 +75,15 @@ export class Hospital {
   @Column({ type: 'simple-array', nullable: true })
   acceptedInsuranceProviders: string[];
 
-  @Column({ type: 'boolean', default: false })
-  isVerified: boolean;
+  @Column({
+    type: 'enum',
+    enum: HospitalVerificationStatus,
+    default: HospitalVerificationStatus.PENDING,
+  })
+  verificationStatus: HospitalVerificationStatus;
 
+  @Column({ type: 'text', nullable: true })
+  rejectionReason: string | null;
   @Column({ type: 'varchar', nullable: true })
   logoUrl: string;
 

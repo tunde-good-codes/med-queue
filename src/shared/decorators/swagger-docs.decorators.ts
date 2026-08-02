@@ -1,4 +1,4 @@
-import { applyDecorators } from "@nestjs/common";
+import { applyDecorators } from '@nestjs/common';
 import {
   ApiOperation,
   ApiResponse,
@@ -6,63 +6,60 @@ import {
   ApiBody,
   ApiParam,
   ApiConsumes,
-} from "@nestjs/swagger";
+} from '@nestjs/swagger';
 
 export const ApiAuth = () =>
   applyDecorators(
     ApiBearerAuth(),
-    ApiResponse({ status: 401, description: "Unauthorized" }),
-    ApiResponse({ status: 403, description: "Forbidden" })
+    ApiResponse({ status: 401, description: 'Unauthorized' }),
+    ApiResponse({ status: 403, description: 'Forbidden' }),
   );
-
 
 export const ApiCreate = (summary: string, dto: any) =>
   applyDecorators(
     ApiOperation({ summary }),
     ApiBody({ type: dto }),
-    ApiResponse({ status: 201, description: "Created successfully" }),
-    ApiResponse({ status: 400, description: "Bad request" })
+    ApiResponse({ status: 201, description: 'Created successfully' }),
+    ApiResponse({ status: 400, description: 'Bad request' }),
   );
 
-
-  export const ApiPost = (summary: string, dto: any) =>
+export const ApiPost = (summary: string, dto: any) =>
   applyDecorators(
     ApiOperation({ summary }),
     ApiBody({ type: dto }),
     ApiResponse({ status: 200, description: summary }),
-    ApiResponse({ status: 400, description: "Bad request" })
+    ApiResponse({ status: 400, description: 'Bad request' }),
   );
 
-
-  export const ApiGetService = (summary: string) =>
+export const ApiGetService = (summary: string) =>
   applyDecorators(
     ApiOperation({ summary }),
     ApiResponse({ status: 200, description: summary }),
-    ApiResponse({ status: 400, description: "Bad request" })
+    ApiResponse({ status: 400, description: 'Bad request' }),
   );
 
 export const ApiVerify = (summary: string, dto: any) =>
   applyDecorators(
     ApiOperation({ summary }),
     ApiBody({ type: dto }),
-    ApiResponse({ status: 200, description: "Verified successfully" }),
-    ApiResponse({ status: 400, description: "Bad request" }),
-    ApiResponse({ status: 404, description: "OTP not found or expired" })
+    ApiResponse({ status: 200, description: 'Verified successfully' }),
+    ApiResponse({ status: 400, description: 'Bad request' }),
+    ApiResponse({ status: 404, description: 'OTP not found or expired' }),
   );
 
 export const ApiGetAll = (summary: string) =>
   applyDecorators(
     ApiOperation({ summary }),
-    ApiResponse({ status: 200, description: "Fetched successfully" }),
-    ApiResponse({ status: 404, description: "Not found" })
+    ApiResponse({ status: 200, description: 'Fetched successfully' }),
+    ApiResponse({ status: 404, description: 'Not found' }),
   );
 
 export const ApiGetOne = (summary: string) =>
   applyDecorators(
     ApiOperation({ summary }),
-    ApiParam({ name: "id", description: "Resource ID" }),
-    ApiResponse({ status: 200, description: "Fetched successfully" }),
-    ApiResponse({ status: 404, description: "Not found" })
+    ApiParam({ name: 'id', description: 'Resource ID' }),
+    ApiResponse({ status: 200, description: 'Fetched successfully' }),
+    ApiResponse({ status: 404, description: 'Not found' }),
   );
 
 export const ApiUpdateNew = (summary: string, dto: any) =>
@@ -70,36 +67,34 @@ export const ApiUpdateNew = (summary: string, dto: any) =>
     ApiOperation({ summary }),
     ApiBody({ type: dto }),
     ApiResponse({ status: 200, description: summary }),
-    ApiResponse({ status: 400, description: "Bad request" }),
-    ApiResponse({ status: 404, description: "Not found" })
+    ApiResponse({ status: 400, description: 'Bad request' }),
+    ApiResponse({ status: 404, description: 'Not found' }),
   );
 
-
-  export const ApiUpdate = (summary: string, dto: any) =>
+export const ApiUpdate = (summary: string, dto: any) =>
   applyDecorators(
     ApiOperation({ summary }),
-    ApiParam({ name: "id", description: "Resource ID" }),
+    ApiParam({ name: 'id', description: 'Resource ID' }),
     ApiBody({ type: dto }),
-    ApiResponse({ status: 200, description: "Updated successfully" }),
-    ApiResponse({ status: 404, description: "Not found" })
+    ApiResponse({ status: 200, description: 'Updated successfully' }),
+    ApiResponse({ status: 404, description: 'Not found' }),
   );
 
-
-  export const ApiDelete = (summary: string) =>
+export const ApiDelete = (summary: string) =>
   applyDecorators(
     ApiOperation({ summary }),
-    ApiParam({ name: "id", description: "Resource ID" }),
-    ApiResponse({ status: 200, description: "Deleted successfully" }),
-    ApiResponse({ status: 404, description: "Not found" })
+    ApiParam({ name: 'id', description: 'Resource ID' }),
+    ApiResponse({ status: 200, description: 'Deleted successfully' }),
+    ApiResponse({ status: 404, description: 'Not found' }),
   );
 
 // File upload endpoint
 export const ApiFileUpload = (summary: string) =>
   applyDecorators(
     ApiOperation({ summary }),
-    ApiConsumes("multipart/form-data"),
+    ApiConsumes('multipart/form-data'),
     ApiResponse({ status: 200, description: summary }),
-    ApiResponse({ status: 400, description: "Invalid file" })
+    ApiResponse({ status: 400, description: 'Invalid file' }),
   );
 
 // ── Protected combinations (auth + action) ────────────────────────

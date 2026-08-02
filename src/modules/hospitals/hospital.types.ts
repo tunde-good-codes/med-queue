@@ -20,3 +20,10 @@ export interface WeeklySchedule {
   saturday: OperatingHourDay;
   sunday: OperatingHourDay;
 }
+
+
+export enum HospitalVerificationStatus {
+  PENDING = 'pending',
+  VERIFIED = 'verified',
+  REJECTED = 'rejected',
+}
