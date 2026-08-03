@@ -558,7 +558,6 @@ export class AuthService {
   }
 
 
-  // auth.service.ts — add cloudinaryService to constructor
 async uploadProfileImage(userId: string, file: Express.Multer.File) {
   if (!file) {
     throw new BadRequestException('Image file is required');
@@ -569,7 +568,8 @@ async uploadProfileImage(userId: string, file: Express.Multer.File) {
     throw new NotFoundException('User not found');
   }
 
-  const uploaded = await this.cloudinaryService.upload(file, `users/${userId}`);
+  const folderName = this.configService.getOrThrow<string>("CLOUDINARY_FOLDER")
+  const uploaded = await this.cloudinaryService.upload(file, `${folderName}/users`);
   user.profileImage = uploaded.url;
   await this.authRepository.save(user);
 

@@ -16,6 +16,7 @@ import {
 import { HospitalsService } from './hospitals.service';
 import { ApiTags } from '@nestjs/swagger';
 import {
+  ApiCreate,
   ApiGetService,
   ApiPost,
   ApiUpdateNew,
@@ -28,8 +29,9 @@ import { UserRole } from '../auth/entities/auth.entity';
 import { Roles } from 'src/shared/decorators/roles.decorator';
 import { RejectHospitalDto } from './dtos/reject-hospital.dto';
 import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
-import { FilesInterceptor } from "@nestjs/platform-express";
-import { imageUploadOptions } from "src/shared/config/multer.config";
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { imageUploadOptions } from 'src/shared/config/multer.config';
+import { CreateDepartmentDto } from './dtos/create-department-dto';
 
 @Controller('hospitals')
 @ApiTags('Hospital Service')
@@ -82,16 +84,30 @@ export class HospitalsController {
     return this.hospitalService.rejectHospital(id, dto);
   }
 
+  @Post(':id/images')
+  @UseGuards(JwtAuthGuard, RolesGuard, HospitalOwnershipGuard)
+  @Roles(UserRole.HOSPITAL, UserRole.ADMIN)
+  @UseInterceptors(FilesInterceptor('images', 5, imageUploadOptions))
+  async uploadImages(
+    @Req() req: any,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    return this.hospitalService.uploadImages(req.hospital, files);
+  }
 
+  @Post(':id/add-department')
+  @UseGuards(JwtAuthGuard, HospitalOwnershipGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.HOSPITAL)
+  @ResponseMessage('added a new department to hospital')
+  @ApiCreate('create a new department for hospital', CreateDepartmentDto)
+  async addDepartment(@Req() req, @Body() dto: CreateDepartmentDto) {
+    return this.hospitalService.addDepartment(req.hospital, dto);
+  }
 
-@Post(':id/images')
-@UseGuards(JwtAuthGuard, RolesGuard, HospitalOwnershipGuard)
-@Roles(UserRole.HOSPITAL, UserRole.ADMIN)
-@UseInterceptors(FilesInterceptor('images', 5, imageUploadOptions))
-async uploadImages(
-  @Req() req: any,
-  @UploadedFiles() files: Express.Multer.File[],
-) {
-  return this.hospitalService.uploadImages(req.hospital, files);
-}
+  @Get(':id/get-departments')
+  @ApiGetService("get all hospital departments")
+  @ResponseMessage("all department fetched")
+  async getDepartment(@Param('id', ParseUUIDPipe) id: string) {
+    return this.hospitalService.getDepartments(id)
+  }
 }

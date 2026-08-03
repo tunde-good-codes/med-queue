@@ -169,7 +169,7 @@ export class AuthController {
     return await this.authService.changePassword(req.user.id, dto);
   }
 
-  @Post('me/image')
+  @Post('upload-image')
   
   @ApiGetService('upload a user image')
   @ResponseMessage('"user image uploaded"')

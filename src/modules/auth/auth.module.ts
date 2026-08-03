@@ -19,7 +19,8 @@ import { GoogleStrategy } from './strategies/google.strategies';
     JwtModule.register({}),
     PassportModule.register({
       defaultStrategy: 'jwt',
-    }),CloudinaryModule
+    }),
+    CloudinaryModule,
   ],
 
   exports: [JwtStrategy, PassportModule],

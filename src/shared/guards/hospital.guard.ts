@@ -21,6 +21,7 @@ export class HospitalOwnershipGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const { user, params } = request;
+  console.log('Received id:', JSON.stringify(params.id), 'length:', params.id.length);
 
     const hospital = await this.hospitalRepository.findOne({
       where: { id: params.id },

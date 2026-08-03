@@ -8,6 +8,7 @@ import {
   BeforeInsert,
   OneToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import {
   FacilityType,
@@ -16,6 +17,7 @@ import {
   type WeeklySchedule,
 } from '../hospital.types';
 import { Auth } from 'src/modules/auth/entities/auth.entity';
+import { Department } from './department.entity';
 
 @Entity('hospitals')
 export class Hospital {
@@ -67,6 +69,10 @@ export class Hospital {
   @Column({ type: 'decimal', precision: 10, scale: 7 })
   longitude: number;
 
+  @OneToMany(() => Department, (department) => department.hospital)
+  departments: Department[];
+
+  
   @Column({ type: 'jsonb' })
   operatingHours: WeeklySchedule;
 
