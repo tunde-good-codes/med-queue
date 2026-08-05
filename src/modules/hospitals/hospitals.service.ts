@@ -15,7 +15,10 @@ import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
 import { CloudinaryService } from 'src/infrastructure/cloudinary/cloudinary.service';
 import { ConfigService } from '@nestjs/config';
 import { Department } from './entities/department.entity';
-import { CreateDepartmentDto } from './dtos/create-department-dto';
+import {
+  CreateDepartmentDto,
+  UpdateDepartmentDto,
+} from './dtos/create-department-dto';
 @Injectable()
 export class HospitalsService {
   constructor(
@@ -181,7 +184,7 @@ export class HospitalsService {
       files.map((file) =>
         this.cloudinaryService.upload(
           file,
-          `${folder}/hospitals/${hospital.email}`,
+          `${folder}/hospitals/${hospital.id}`,
         ),
       ),
     );
@@ -190,10 +193,10 @@ export class HospitalsService {
     return await this.hospitalRepository.save(hospital);
   }
 
-  async addDepartment(hospitalId: string, dto: CreateDepartmentDto) {
+  async addDepartment(hospital: Hospital, dto: CreateDepartmentDto) {
     const existingDepartment = await this.departmentRepository.findOne({
       where: {
-        hospitalId: hospitalId,
+        hospitalId: hospital.id,
         name: dto.name,
       },
     });
@@ -205,7 +208,7 @@ export class HospitalsService {
     }
 
     const department = this.departmentRepository.create({
-      hospitalId: hospitalId,
+      hospitalId: hospital.id,
       ...dto,
     });
 
@@ -223,20 +226,58 @@ export class HospitalsService {
       throw new NotFoundException('No Hospital found ');
     }
 
-    const departments =await this.departmentRepository.find({
-      where:{
-        hospitalId
-      }, order:{createdAt:"desc"}
-    })
+    const departments = await this.departmentRepository.find({
+      where: {
+        hospitalId,
+      },
+      order: { createdAt: 'desc' },
+    });
 
-
-    if(!departments || departments.length === 0){
-      throw new NotFoundException("no department for this hospital")
+    if (!departments || departments.length === 0) {
+      throw new NotFoundException('no department for this hospital');
     }
-
 
     return {
-      departments
+      departments,
+    };
+  }
+
+  async updateDepartment(
+    hospital: Hospital,
+    departmentId: string,
+    dto: UpdateDepartmentDto,
+  ) {
+    const department = await this.departmentRepository.findOne({
+      where: {
+        id: departmentId,
+        hospitalId: hospital.id,
+      },
+    });
+
+    if (!department) {
+      throw new NotFoundException(
+        'cant find department with this id in the hospital',
+      );
     }
+
+    if (dto.name && dto.name !== department.name) {
+      const duplicate = await this.departmentRepository.findOne({
+        where: {
+          hospitalId: hospital.id,
+          name: dto.name,
+        },
+      });
+
+      if (duplicate) {
+        throw new ConflictException(
+          'a department with this already exist for the hospital',
+        );
+      }
+
+      Object.assign(department, dto);
+    }
+    await this.departmentRepository.save(department);
+
+    return { department };
   }
 }

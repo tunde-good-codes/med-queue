@@ -1,4 +1,5 @@
 
+import { PartialType } from "@nestjs/swagger";
 import { IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateDepartmentDto {
@@ -13,3 +14,6 @@ export class CreateDepartmentDto {
   @MaxLength(1000)
   description?: string;
 }
+
+
+export class UpdateDepartmentDto extends PartialType(CreateDepartmentDto){}

@@ -31,7 +31,10 @@ import { RejectHospitalDto } from './dtos/reject-hospital.dto';
 import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { imageUploadOptions } from 'src/shared/config/multer.config';
-import { CreateDepartmentDto } from './dtos/create-department-dto';
+import {
+  CreateDepartmentDto,
+  UpdateDepartmentDto,
+} from './dtos/create-department-dto';
 
 @Controller('hospitals')
 @ApiTags('Hospital Service')
@@ -105,9 +108,24 @@ export class HospitalsController {
   }
 
   @Get(':id/get-departments')
-  @ApiGetService("get all hospital departments")
-  @ResponseMessage("all department fetched")
+  @ApiGetService('get all hospital departments')
+  @ResponseMessage('all department fetched')
   async getDepartment(@Param('id', ParseUUIDPipe) id: string) {
-    return this.hospitalService.getDepartments(id)
+    return this.hospitalService.getDepartments(id);
+  }
+
+
+  @Patch(":id/department/:departmentId")
+  @ResponseMessage("department updated successfully")
+  @ApiCreate("Update hospital department", UpdateDepartmentDto)
+  @UseGuards(JwtAuthGuard, HospitalOwnershipGuard, RolesGuard)
+  @Roles(UserRole.HOSPITAL, UserRole.ADMIN)
+  async updateDepartment(
+    @Req() req:any,
+    @Param('departmentId', ParseUUIDPipe) departmentId: string,
+    @Body() dto: UpdateDepartmentDto,
+  ) {
+
+    return this.hospitalService.updateDepartment(req.hospital, departmentId, dto)
   }
 }
