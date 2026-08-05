@@ -241,6 +241,24 @@ export class HospitalsService {
       departments,
     };
   }
+  async getSingleDepartment(hospitalId: string, departmentId: string) {
+
+    
+    const department = await this.departmentRepository.findOne({
+      where: {
+        hospitalId: hospitalId,
+        id: departmentId,
+      },
+    });
+
+    if(!department){
+      throw new NotFoundException("No department found!")
+    }
+
+    return {
+      department,
+    };
+  }
 
   async updateDepartment(
     hospital: Hospital,
@@ -279,5 +297,32 @@ export class HospitalsService {
     await this.departmentRepository.save(department);
 
     return { department };
+  }
+
+  async deleteHospital(id: string) {
+    const result = await this.hospitalRepository.delete({
+      id,
+    });
+    if (result.affected === 0) {
+      throw new NotFoundException('hospital for this id not found');
+    }
+
+    return {
+      message: 'deleted successfully',
+    };
+  }
+
+  async deleteHospitalDepartment(departmentId: string, hospital: Hospital) {
+    const result = await this.departmentRepository.delete({
+      id: departmentId,
+      hospitalId: hospital.id,
+    });
+
+    if (result.affected === 0) {
+      throw new NotFoundException('Department not found for this hospital');
+    }
+    return {
+      message: 'deleted successfully',
+    };
   }
 }

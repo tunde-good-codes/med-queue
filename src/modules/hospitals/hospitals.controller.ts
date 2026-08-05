@@ -2,6 +2,7 @@ import { UpdateHospitalDto } from './dtos/update-hospital.dto';
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -17,6 +18,7 @@ import { HospitalsService } from './hospitals.service';
 import { ApiTags } from '@nestjs/swagger';
 import {
   ApiCreate,
+  ApiDelete,
   ApiGetService,
   ApiPost,
   ApiUpdateNew,
@@ -114,18 +116,53 @@ export class HospitalsController {
     return this.hospitalService.getDepartments(id);
   }
 
-
-  @Patch(":id/department/:departmentId")
-  @ResponseMessage("department updated successfully")
-  @ApiCreate("Update hospital department", UpdateDepartmentDto)
+  @Get(':id/department/:departmentId')
+  @ResponseMessage('get single department')
+  @ApiGetService('Get single Department')
+  async getSingleDepartment(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('departmentId', ParseUUIDPipe) departmentId: string,
+  ) {
+    return this.hospitalService.getSingleDepartment(id, departmentId);
+  }
+  @Patch(':id/department/:departmentId')
+  @ResponseMessage('department updated successfully')
+  @ApiCreate('Update hospital department', UpdateDepartmentDto)
   @UseGuards(JwtAuthGuard, HospitalOwnershipGuard, RolesGuard)
   @Roles(UserRole.HOSPITAL, UserRole.ADMIN)
   async updateDepartment(
-    @Req() req:any,
+    @Req() req: any,
     @Param('departmentId', ParseUUIDPipe) departmentId: string,
     @Body() dto: UpdateDepartmentDto,
   ) {
+    return this.hospitalService.updateDepartment(
+      req.hospital,
+      departmentId,
+      dto,
+    );
+  }
 
-    return this.hospitalService.updateDepartment(req.hospital, departmentId, dto)
+  @Delete(':id')
+  @ResponseMessage('hospital deleted')
+  @UseGuards(JwtAuthGuard, HospitalOwnershipGuard, RolesGuard)
+  @Roles(UserRole.HOSPITAL, UserRole.ADMIN)
+  @ApiDelete('delete a hospital')
+  async deleteHospital(@Param('id', ParseUUIDPipe) id: string) {
+    return this.hospitalService.deleteHospital(id);
+  }
+
+  @Delete(':id/department/:departmentId')
+  @ResponseMessage('hospital deleted')
+  @UseGuards(JwtAuthGuard, HospitalOwnershipGuard, RolesGuard)
+  @Roles(UserRole.HOSPITAL, UserRole.ADMIN)
+  @ApiDelete('delete a hospital')
+  async deleteHospitalDepartment(
+    @Param('departmentId', ParseUUIDPipe) departmentId: string,
+    @Req() req: any,
+  ) {
+    return this.hospitalService.deleteHospitalDepartment(
+      departmentId,
+      req.hospital,
+    );
   }
 }
