@@ -18,6 +18,7 @@ import {
 } from '../hospital.types';
 import { Auth } from 'src/modules/auth/entities/auth.entity';
 import { Department } from './department.entity';
+import { Doctor } from 'src/modules/doctors/doctor.entity';
 
 @Entity('hospitals')
 export class Hospital {
@@ -72,7 +73,8 @@ export class Hospital {
   @OneToMany(() => Department, (department) => department.hospital)
   departments: Department[];
 
-  
+  @OneToMany(() => Doctor, (doctor) => doctor.hospital)
+  doctors: Doctor[];
   @Column({ type: 'jsonb' })
   operatingHours: WeeklySchedule;
 

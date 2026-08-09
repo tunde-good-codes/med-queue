@@ -46,6 +46,7 @@ import { RegisterHospitalDto } from '../hospitals/dtos/create-hospital.dto';
 import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { imageUploadOptions } from 'src/shared/config/multer.config';
+import { RegisterDoctorDto } from '../doctors/dtos/registerDoctor.dto';
 
 @ApiTags('auth service')
 @Controller('auth')
@@ -161,6 +162,14 @@ export class AuthController {
   async registerHospital(@Body() dto: RegisterHospitalDto) {
     return await this.authService.registerNewHospital(dto);
   }
+
+  // auth.controller.ts
+  @ResponseMessage('doctor account created successfully')
+  @ApiCreate('register a new doctor', RegisterDoctorDto)
+  @Post('sign-up/doctor')
+  registerDoctor(@Body() dto: RegisterDoctorDto) {
+    return this.authService.registerNewDoctor(dto);
+  }
   @ApiPost('change password', ChangePasswordDto)
   @ResponseMessage('password changed completed')
   @Post('change-password')
@@ -170,7 +179,6 @@ export class AuthController {
   }
 
   @Post('upload-image')
-  
   @ApiGetService('upload a user image')
   @ResponseMessage('"user image uploaded"')
   @UseGuards(JwtAuthGuard)

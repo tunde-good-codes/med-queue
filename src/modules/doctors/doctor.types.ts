@@ -1,0 +1,16 @@
+export enum Specialty {
+  GENERAL_PRACTICE = 'general_practice',
+  CARDIOLOGIST = 'cardiologist',
+  DERMATOLOGIST = 'dermatologist',
+  PEDIATRICIAN = 'pediatrician',
+  GYNECOLOGIST = 'gynecologist',
+  ORTHOPEDIC_SURGEON = 'orthopedic_surgeon',
+  NEUROLOGIST = 'neurologist',
+  PSYCHIATRIST = 'psychiatrist',
+  DENTIST = 'dentist',
+  OPHTHALMOLOGIST = 'ophthalmologist',
+  ENT_SPECIALIST = 'ent_specialist',
+  RADIOLOGIST = 'radiologist',
+  ANESTHESIOLOGIST = 'anesthesiologist',
+  GENERAL_SURGEON = 'general_surgeon',
+}

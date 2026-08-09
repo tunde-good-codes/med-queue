@@ -31,7 +31,11 @@ import { ForgotPasswordType } from 'src/types/auth';
 import { RegisterHospitalDto } from '../hospitals/dtos/create-hospital.dto';
 import { Hospital } from '../hospitals/entities/hospital.entity';
 import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
-import { CloudinaryService } from "src/infrastructure/cloudinary/cloudinary.service";
+import { CloudinaryService } from 'src/infrastructure/cloudinary/cloudinary.service';
+import { RegisterDoctorDto } from '../doctors/dtos/registerDoctor.dto';
+import { HospitalVerificationStatus } from '../hospitals/hospital.types';
+import { Department } from '../hospitals/entities/department.entity';
+import { Doctor } from '../doctors/doctor.entity';
 @Injectable()
 export class AuthService {
   constructor(
@@ -43,8 +47,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
 
-    private readonly datasource: DataSource,    private readonly cloudinaryService: CloudinaryService,
-    
+    private readonly datasource: DataSource,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
   async registerNewUser(registerUserDto: RegisterUserDto) {
     const existingUser = await this.authRepository.findOne({
@@ -154,6 +158,102 @@ export class AuthService {
           'Registration successful. Please check your email for verification code',
         email: dto.email,
         hospitalName: dto.hospitalName,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async registerNewDoctor(dto: RegisterDoctorDto) {
+    const queryRunner = this.datasource.createQueryRunner();
+    queryRunner.connect();
+    queryRunner.startTransaction();
+
+    try {
+      const existingUser = await queryRunner.manager.findOne(Auth, {
+        where: {
+          email: dto.email,
+        },
+      });
+
+      if (existingUser) {
+        throw new ConflictException('a user exists with this email');
+      }
+
+      const hospital = await queryRunner.manager.findOne(Hospital, {
+        where: {
+          id: dto.hospitalId,
+        },
+      });
+
+      if (!hospital) {
+        throw new NotFoundException('no hospital found with this id');
+      }
+      if (hospital.verificationStatus !== HospitalVerificationStatus.VERIFIED) {
+        throw new BadRequestException(
+          'You can only signup to registered hospital',
+        );
+      }
+
+      if (dto.departmentId) {
+        const department = await queryRunner.manager.findOne(Department, {
+          where: {
+            id: dto.departmentId,
+          },
+        });
+
+        if (!department) {
+          throw new NotFoundException('department with this id not found!');
+        }
+      }
+      const existingLicenseNumber = await queryRunner.manager.findOne(Doctor, {
+        where: {
+          licenseNumber: dto.licenseNumber,
+        },
+      });
+
+      if (existingLicenseNumber) {
+        throw new ConflictException(
+          'doctor with this license number already exists',
+        );
+      }
+
+      const hashPassword = await bcrypt.hash(dto.password, 12);
+
+      const user = queryRunner.manager.create(Auth, {
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        email: dto.email,
+        password: hashPassword,
+        phoneNumber: dto.phoneNumber,
+      });
+
+      await queryRunner.manager.save(Auth, user);
+      const doctor = queryRunner.manager.create(Doctor, {
+        userId: user.id,
+        hospitalId: dto.hospitalId,
+        departmentId: dto.departmentId ?? null,
+        specialty: dto.specialty,
+        licenseNumber: dto.licenseNumber,
+        bio: dto.bio,
+        consultationFee: dto.consultationFee,
+        yearsOfExperience: dto.yearsOfExperience ?? 0,
+      });
+      await queryRunner.manager.save(Doctor, doctor);
+
+      const otp = randomInt(100000, 999999).toString();
+      await this.redisClient.set(`otp:${dto.email}`, otp, 'EX', 300);
+      this.mailService.sendVerificationOtp(dto.email, dto.firstName, otp);
+
+      await queryRunner.commitTransaction();
+
+      return {
+        message:
+          'Registration successful. Please check your email for verification code',
+        email: dto.email,
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -552,29 +652,34 @@ export class AuthService {
     }
     return {
       total,
-      limit,page, totalPages:Math.floor(total/limit),
+      limit,
+      page,
+      totalPages: Math.floor(total / limit),
       users,
     };
   }
 
+  async uploadProfileImage(userId: string, file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Image file is required');
+    }
 
-async uploadProfileImage(userId: string, file: Express.Multer.File) {
-  if (!file) {
-    throw new BadRequestException('Image file is required');
+    const user = await this.authRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const folderName =
+      this.configService.getOrThrow<string>('CLOUDINARY_FOLDER');
+    const uploaded = await this.cloudinaryService.upload(
+      file,
+      `${folderName}/users`,
+    );
+    user.profileImage = uploaded.url;
+    await this.authRepository.save(user);
+
+    return { message: 'Profile image updated', profileImage: uploaded.url };
   }
-
-  const user = await this.authRepository.findOne({ where: { id: userId } });
-  if (!user) {
-    throw new NotFoundException('User not found');
-  }
-
-  const folderName = this.configService.getOrThrow<string>("CLOUDINARY_FOLDER")
-  const uploaded = await this.cloudinaryService.upload(file, `${folderName}/users`);
-  user.profileImage = uploaded.url;
-  await this.authRepository.save(user);
-
-  return { message: 'Profile image updated', profileImage: uploaded.url };
-}
   async generateTokens(payload: ValidatePayloadTypes) {
     const refreshTokenKey = randomBytes(16).toString('hex');
 
