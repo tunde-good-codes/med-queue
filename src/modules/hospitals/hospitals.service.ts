@@ -64,7 +64,7 @@ export class HospitalsService {
       },
     });
 
-    if (!hospital) {
+    if (!hospital ) {
       throw new ConflictException('No hospital matched with this id');
     }
 
@@ -242,8 +242,6 @@ export class HospitalsService {
     };
   }
   async getSingleDepartment(hospitalId: string, departmentId: string) {
-
-    
     const department = await this.departmentRepository.findOne({
       where: {
         hospitalId: hospitalId,
@@ -251,8 +249,8 @@ export class HospitalsService {
       },
     });
 
-    if(!department){
-      throw new NotFoundException("No department found!")
+    if (!department ) {
+      throw new NotFoundException('No department found!');
     }
 
     return {
@@ -324,5 +322,18 @@ export class HospitalsService {
     return {
       message: 'deleted successfully',
     };
+  }
+
+  async myHospital(userId: string) {
+    const authHospital = await this.hospitalRepository.findOne({
+      where: {
+        userId},
+    });
+
+    if (!authHospital) {
+      throw new ConflictException('Unauthorized to view this hospital');
+    }
+
+    return {hospital:authHospital}
   }
 }

@@ -49,6 +49,15 @@ export class HospitalsController {
   async getAllHospital(@Query() query: PaginationQueryDto) {
     return this.hospitalService.getAllHospital(query);
   }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.HOSPITAL)
+  @ApiGetService('get my hospital')
+  @ResponseMessage('hospital fetched successfully')
+  async getMyHospital(@Req() req: any) {
+    return this.hospitalService.myHospital(req.user.id);
+  }
   @UseGuards(JwtAuthGuard, RolesGuard, HospitalOwnershipGuard)
   @Roles(UserRole.HOSPITAL, UserRole.ADMIN)
   @ApiUpdateNew('update hospital data', UpdateHospitalDto)
@@ -75,6 +84,15 @@ export class HospitalsController {
   @Patch(':id/verify')
   async verifyHospital(@Param('id', ParseUUIDPipe) id: string) {
     return this.hospitalService.verifyHospital(id);
+  }
+
+  @Delete(':id')
+  @ResponseMessage('hospital deleted')
+  @UseGuards(JwtAuthGuard, HospitalOwnershipGuard, RolesGuard)
+  @Roles(UserRole.HOSPITAL, UserRole.ADMIN)
+  @ApiDelete('delete a hospital')
+  async deleteHospital(@Param('id', ParseUUIDPipe) id: string) {
+    return this.hospitalService.deleteHospital(id);
   }
 
   @Patch(':id/reject')
@@ -140,15 +158,6 @@ export class HospitalsController {
       departmentId,
       dto,
     );
-  }
-
-  @Delete(':id')
-  @ResponseMessage('hospital deleted')
-  @UseGuards(JwtAuthGuard, HospitalOwnershipGuard, RolesGuard)
-  @Roles(UserRole.HOSPITAL, UserRole.ADMIN)
-  @ApiDelete('delete a hospital')
-  async deleteHospital(@Param('id', ParseUUIDPipe) id: string) {
-    return this.hospitalService.deleteHospital(id);
   }
 
   @Delete(':id/department/:departmentId')
