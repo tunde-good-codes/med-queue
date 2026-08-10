@@ -5,6 +5,7 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -14,6 +15,7 @@ import { Hospital } from '../hospitals/entities/hospital.entity';
 import { Department } from '../hospitals/entities/department.entity';
 import { Specialty } from './doctor.types';
 import { number } from 'joi';
+import { Schedule } from "./schedule.entity";
 
 @Entity('doctors')
 export class Doctor {
@@ -58,7 +60,6 @@ export class Doctor {
   @Column({
     type: 'text',
     unique: true,
-    length: 100,
   })
   licenseNumber: string;
 
@@ -113,6 +114,8 @@ export class Doctor {
   })
   yearsOfExperience: number;
 
+  @OneToMany(()=> Schedule, (schedule)=> schedule.doctor)
+  schedules: Schedule[]
   @CreateDateColumn()
   createdAt: Date;
 

@@ -208,11 +208,11 @@ export class HospitalsService {
     }
 
     const department = this.departmentRepository.create({
-      hospitalId: hospital.id,
+      hospital,
       ...dto,
     });
-
     await this.departmentRepository.save(department);
+
     return { department };
   }
 
