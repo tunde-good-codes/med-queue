@@ -4,12 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Doctor } from './doctor.entity';
-import { Not, Repository } from 'typeorm';
+import { DataSource, Not, Repository } from 'typeorm';
 import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
 import { UpdateDoctorDto } from './dtos/updateDoctorDto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Schedule } from './schedule.entity';
 import { SetScheduleDto, UpdateScheduleDayDto } from './dtos/setScheduleDto';
+import { Auth } from '../auth/entities/auth.entity';
 
 @Injectable()
 export class DoctorsService {
@@ -18,6 +19,7 @@ export class DoctorsService {
     private readonly doctorRepository: Repository<Doctor>,
     @InjectRepository(Schedule)
     private readonly scheduleRepository: Repository<Schedule>,
+    private readonly datasource: DataSource,
   ) {}
 
   async loggedInDoctor(id: string) {
@@ -57,6 +59,33 @@ export class DoctorsService {
       order: {
         createdAt: 'desc',
       },
+      relations: {
+        user: true,
+        schedules: true,
+      },
+      select: {
+        id: true,
+        userId: true,
+        hospitalId: true,
+        departmentId: true,
+        licenseNumber: true,
+        specialty: true,
+        bio: true,
+        rating: true,
+        consultationFee: true,
+        isAvailable: true,
+        totalRatings: true,
+        yearsOfExperience: true,
+        createdAt: true,
+        updatedAt: true,
+        user: {
+          id: true,
+          email: true,
+        },
+        schedules: {
+          id: true,
+        },
+      },
     });
 
     if (!doctors || doctors.length === 0) {
@@ -65,40 +94,61 @@ export class DoctorsService {
 
     return {
       total,
-      totalPages: Math.floor(total / limit) || 1,
+      totalPages: Math.ceil(total / limit) || 1,
       page,
       limit,
       doctors,
     };
   }
 
-  async updateDoctor(id: string, dto: UpdateDoctorDto) {
-    const doctor = await this.doctorRepository.findOne({
+  async updateDoctor(doctor: Doctor, dto: UpdateDoctorDto) {
+    const newDoc = await this.doctorRepository.findOne({
       where: {
-        id,
+        id:doctor.id
       },
     });
 
-    if (!doctor) {
-      throw new NotFoundException('no doctor found with this id');
+    if (!newDoc) {
+      throw new NotFoundException('no newDoc found with this id');
     }
 
-    Object.assign(doctor, dto);
+    Object.assign(newDoc, dto);
 
-    await this.doctorRepository.save(doctor);
-    return { doctor };
+    await this.doctorRepository.save(newDoc);
+    return { newDoc };
   }
 
   async deleteDoctor(id: string) {
-    const result = await this.doctorRepository.delete(id);
+    const queryRunner = this.datasource.createQueryRunner();
 
-    if (result.affected === 0) {
-      throw new NotFoundException('unable to delete doctor with this id');
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const doctor = await queryRunner.manager.findOne(Doctor, {
+        where: { id },
+      });
+
+      if (!doctor) {
+        throw new NotFoundException('no doctor found with this id');
+      }
+
+      const result = await queryRunner.manager.delete(Auth, {
+        id: doctor.userId,
+      });
+
+      if (result.affected === 0) {
+        throw new NotFoundException('Associated user account not found');
+      }
+
+      await queryRunner.commitTransaction();
+      return { message: 'Doctor account deleted successfully' };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-
-    return {
-      message: 'doctor deleted',
-    };
   }
 
   async setSchedule(doctor: Doctor, dto: SetScheduleDto) {

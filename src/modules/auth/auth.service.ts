@@ -229,6 +229,7 @@ export class AuthService {
         email: dto.email,
         password: hashPassword,
         phoneNumber: dto.phoneNumber,
+        role:UserRole.DOCTOR
       });
 
       await queryRunner.manager.save(Auth, user);

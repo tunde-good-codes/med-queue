@@ -16,6 +16,7 @@ import {
 import { JwtAuthGuard } from 'src/shared/guards/JwtAuthGuard';
 import { ResponseMessage } from 'src/shared/decorators/response.message.decorator';
 import {
+  ApiCreate,
   ApiDelete,
   ApiGetService,
   ApiUpdate,
@@ -28,7 +29,9 @@ import { Roles } from 'src/shared/decorators/roles.decorator';
 import { UserRole } from '../auth/entities/auth.entity';
 import { SetScheduleDto, UpdateScheduleDayDto } from './dtos/setScheduleDto';
 import { DoctorsService } from './doctors.service';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Doctor Service')
 @Controller('doctors')
 export class DoctorsController {
   constructor(private readonly doctorService: DoctorsService) {}
@@ -56,18 +59,17 @@ export class DoctorsController {
     return this.doctorService.getAllDoctors(dto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, DoctorAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.DOCTOR)
   @Patch(':id/update-doctor')
   @ResponseMessage('update doctors successfully')
   @ApiUpdate('update doctor records', UpdateDoctorDto)
-  async updateDoctor(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateDoctorDto,
-  ) {
-    return this.doctorService.updateDoctor(id, dto);
+  async updateDoctor(@Req() req: any, @Body() dto: UpdateDoctorDto) {
+    return this.doctorService.updateDoctor(req.doctor, dto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, DoctorAuthGuard)
+  @Roles(UserRole.ADMIN, UserRole.DOCTOR)
   @Delete(':id')
   @ResponseMessage('delete doctors successfully')
   @ApiDelete('delete doctor records')
@@ -78,6 +80,7 @@ export class DoctorsController {
   @Post(':id/schedule')
   @UseGuards(JwtAuthGuard, RolesGuard, DoctorAuthGuard)
   @Roles(UserRole.DOCTOR, UserRole.ADMIN)
+  @ApiCreate('set schedule for doctor', SetScheduleDto)
   @ResponseMessage('schedule set successfully')
   async setSchedule(@Req() req: any, @Body() dto: SetScheduleDto) {
     return this.doctorService.setSchedule(req.doctor, dto);
@@ -86,16 +89,18 @@ export class DoctorsController {
   @Patch(':id/schedule/:day')
   @UseGuards(JwtAuthGuard, RolesGuard, DoctorAuthGuard)
   @Roles(UserRole.DOCTOR, UserRole.ADMIN)
+  @ApiUpdate('update doctor schedule', UpdateDoctorDto)
   @ResponseMessage('schedule day updated')
   async updateScheduleDay(
     @Req() req: any,
     @Param('day', ParseIntPipe) day: number,
     @Body() dto: UpdateScheduleDayDto,
   ) {
-    return this.doctorService.updateScheduleDay(req.doctor,  dto, day);
+    return this.doctorService.updateScheduleDay(req.doctor, dto, day);
   }
 
   @Get(':id/schedule')
+  @ApiGetService('get doctor schedules')
   @ResponseMessage('schedule fetched')
   async getSchedule(
     @Param('id', ParseUUIDPipe) id: string,

@@ -79,8 +79,8 @@ export class Doctor {
     scale: 2,
     default: 0,
     transformer: {
-      from: (value: number) => value,
-      to: (value: string) => parseFloat(value),
+      from: (value: string | null) => (value ? parseFloat(value) : 0), 
+      to: (value: number) => value,                                   
     },
   })
   rating: number;
@@ -91,8 +91,8 @@ export class Doctor {
     scale: 2,
     default: 0,
     transformer: {
-      from: (value: number) => value,
-      to: (value: string) => parseFloat(value),
+      from: (value: string | null) => (value ? parseFloat(value) : 0), 
+      to: (value: number) => value,                                   
     },
   })
   consultationFee: number;
