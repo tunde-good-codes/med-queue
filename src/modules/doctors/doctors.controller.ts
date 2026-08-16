@@ -71,7 +71,7 @@ export class DoctorsController {
   @UseGuards(JwtAuthGuard, RolesGuard, DoctorAuthGuard)
   @Roles(UserRole.ADMIN, UserRole.DOCTOR)
   @Delete(':id')
-  @ResponseMessage('delete doctors successfully')
+  @ResponseMessage("delete doctor's successfully")
   @ApiDelete('delete doctor records')
   async deleteDoctor(@Param('id', ParseUUIDPipe) id: string) {
     return this.doctorService.deleteDoctor(id);
@@ -80,7 +80,7 @@ export class DoctorsController {
   @Post(':id/schedule')
   @UseGuards(JwtAuthGuard, RolesGuard, DoctorAuthGuard)
   @Roles(UserRole.DOCTOR, UserRole.ADMIN)
-  @ApiCreate('set schedule for doctor', SetScheduleDto)
+  @ApiCreate('set detailed weekly schedule for doctor', SetScheduleDto)
   @ResponseMessage('schedule set successfully')
   async setSchedule(@Req() req: any, @Body() dto: SetScheduleDto) {
     return this.doctorService.setSchedule(req.doctor, dto);
