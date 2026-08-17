@@ -15,7 +15,8 @@ import { Hospital } from '../hospitals/entities/hospital.entity';
 import { Department } from '../hospitals/entities/department.entity';
 import { Specialty } from './doctor.types';
 import { number } from 'joi';
-import { Schedule } from "./schedule.entity";
+import { Schedule } from './schedule.entity';
+import { Appointment } from '../appointments/entitities/appointment.entity';
 
 @Entity('doctors')
 export class Doctor {
@@ -55,7 +56,7 @@ export class Doctor {
 
   @Index()
   @Column({ type: 'uuid', nullable: true, insert: false, update: false })
-  departmentId: string  | null;
+  departmentId: string | null;
 
   @Column({
     type: 'text',
@@ -79,8 +80,8 @@ export class Doctor {
     scale: 2,
     default: 0,
     transformer: {
-      from: (value: string | null) => (value ? parseFloat(value) : 0), 
-      to: (value: number) => value,                                   
+      from: (value: string | null) => (value ? parseFloat(value) : 0),
+      to: (value: number) => value,
     },
   })
   rating: number;
@@ -91,8 +92,8 @@ export class Doctor {
     scale: 2,
     default: 0,
     transformer: {
-      from: (value: string | null) => (value ? parseFloat(value) : 0), 
-      to: (value: number) => value,                                   
+      from: (value: string | null) => (value ? parseFloat(value) : 0),
+      to: (value: number) => value,
     },
   })
   consultationFee: number;
@@ -114,8 +115,11 @@ export class Doctor {
   })
   yearsOfExperience: number;
 
-  @OneToMany(()=> Schedule, (schedule)=> schedule.doctor)
-  schedules: Schedule[]
+  @OneToMany(() => Appointment, (a) => a.doctor)
+  appointments: Appointment[];
+
+  @OneToMany(() => Schedule, (schedule) => schedule.doctor)
+  schedules: Schedule[];
   @CreateDateColumn()
   createdAt: Date;
 

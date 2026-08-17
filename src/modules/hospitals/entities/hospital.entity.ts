@@ -19,6 +19,7 @@ import {
 import { Auth } from 'src/modules/auth/entities/auth.entity';
 import { Department } from './department.entity';
 import { Doctor } from 'src/modules/doctors/doctor.entity';
+import { Appointment } from "src/modules/appointments/entitities/appointment.entity";
 
 @Entity('hospitals')
 export class Hospital {
@@ -102,6 +103,10 @@ export class Hospital {
   })
   user: Auth;
 
+
+  @OneToMany(()=> Appointment, (a)=> a.hospital)
+
+  appointments:Appointment[]
   @Index()
   @Column({
     type: 'uuid',

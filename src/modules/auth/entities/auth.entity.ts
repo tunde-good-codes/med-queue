@@ -1,8 +1,10 @@
+import { Appointment } from 'src/modules/appointments/entitities/appointment.entity';
 import { Hospital } from 'src/modules/hospitals/entities/hospital.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -42,6 +44,8 @@ export class Auth {
   })
   role: UserRole;
 
+  @OneToMany(() => Appointment, (appointment) => appointment.patient)
+  appointments: Appointment[];
   @Column({
     nullable: true,
   })
