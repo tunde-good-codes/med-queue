@@ -18,6 +18,7 @@ import {
   AppointmentTransitions,
   PaymentStatus,
 } from './appointment.types';
+import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
 
 @Injectable()
 export class AppointmentsService {
@@ -109,14 +110,93 @@ export class AppointmentsService {
       );
     }
 
-    const dayOfWeek = new Date(dto.scheduledDate).getUTCDay()
-    const existingAppointment = this.appointmentRepository.findOne({
+    const dayOfWeek = new Date(dto.scheduledDate).getUTCDay();
+    const schedule = await this.scheduleRepository.findOne({
       where: {
-        scheduleDate: dto.scheduledDate,
+        doctorId: appointment.doctorId,
+        dayOfWeek,
+        isActive: true,
       },
     });
+
+    if (!schedule) {
+      throw new BadRequestException('doctor is not available at this time');
+    }
+
+    if (
+      dto.scheduledTime < schedule.startTime ||
+      dto.scheduledTime >= schedule.endTime
+    ) {
+      throw new BadRequestException(
+        'doctor have no available slot at this time',
+      );
+    }
+
+    const countSlot = await this.appointmentRepository.count({
+      where: {
+        doctorId: appointment.id,
+        scheduleDate: dto.scheduledDate,
+        scheduleTime: dto.scheduledTime,
+        appointmentStatus: Not(
+          In([AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW]),
+        ),
+      },
+    });
+
+    if (countSlot > schedule.maxPatientsPerSlot) {
+      throw new ConflictException('The time slot is fully booked');
+    }
+
+    appointment.scheduleDate = dto.scheduledDate;
+    appointment.scheduleTime = dto.scheduledTime;
+
+    appointment.slotNumber = countSlot + 1;
+
+    await this.appointmentRepository.save(appointment);
   }
 
+  async findMineAppointment(patientId: string, pagination: PaginationQueryDto) {
+    const { page = 1, limit = 3 } = pagination;
+
+    const skip = (page - 1) * 3;
+
+    const [appointments, total] = await this.appointmentRepository.findAndCount(
+      {
+        where: {
+          patientId,
+        },
+
+        skip,
+        take: limit,
+        order: {
+          scheduleDate: 'ASC',
+          scheduleTime: 'asc',
+        },
+      },
+    );
+    return {
+      appointments,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async findDoctorAppointmentToday(doctorId: string) {
+    const today = new Date().toISOString().split('T')[0];
+    const appointments = await this.appointmentRepository.find({
+      where: {
+        doctorId,
+        scheduleDate: today,
+      },
+      order:{
+        scheduleDate:"asc"
+      }
+    });
+
+
+    return {
+        appointments
+    }
+  }
   private transitionStatus(
     appointment: Appointment,
     newStatus: AppointmentStatus,
