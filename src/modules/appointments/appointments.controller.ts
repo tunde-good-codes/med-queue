@@ -19,15 +19,28 @@ import { Roles } from 'src/shared/decorators/roles.decorator';
 import { UserRole } from 'src/modules/auth/entities/auth.entity';
 
 import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
-import { CreateAppointmentDto } from './dto/create-appointment-dto';
+import {
+  CreateAppointmentDto,
+  RescheduleAppointmentDto,
+} from './dto/create-appointment-dto';
 import { AppointmentAuthGuard } from 'src/shared/guards/appointment-auth.guard';
+import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiCreate,
+  ApiGetService,
+  ApiUpdate,
+} from 'src/shared/decorators/swagger-docs.decorators';
+import { ResponseMessage } from 'src/shared/decorators/response.message.decorator';
 
+@ApiTags('Appointments')
 @Controller('appointments')
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiCreate('create a new appointment with a doctor', CreateAppointmentDto)
+  @ResponseMessage('appointment created')
   @Roles(UserRole.PATIENT)
   async book(@Req() req: any, @Body() dto: CreateAppointmentDto) {
     return this.appointmentsService.createAppointment(req.user.id, dto);
@@ -36,15 +49,18 @@ export class AppointmentsController {
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PATIENT)
+  @ApiGetService('fetched patient appointment ')
+  @ResponseMessage('Get my appointment successfully')
   async findMine(@Req() req: any, @Query() query: PaginationQueryDto) {
     return this.appointmentsService.findMineAppointment(req.user.id, query);
   }
 
   @Get('doctor/today')
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiGetService("fetched all doctor's  appointment today")
+  @ResponseMessage('Get my appointment successfully')
   @Roles(UserRole.DOCTOR)
   async findDoctorToday(@Req() req: any) {
-    // resolves the logged-in doctor's own id — mirrors GET /doctors/me pattern
     return this.appointmentsService.findDoctorAppointmentToday(req.user.id);
   }
 
@@ -56,21 +72,24 @@ export class AppointmentsController {
 
   @Patch(':id/cancel')
   @UseGuards(JwtAuthGuard, AppointmentAuthGuard)
+  @ApiUpdate('cancel an appointment')
+  @ResponseMessage('appointment cancelled')
   async cancel(@Req() req: any) {
-    // both patient and doctor may cancel — Auth guard already confirmed relationship
     return this.appointmentsService.cancel(req.appointment);
   }
 
   @Patch(':id/reschedule')
   @UseGuards(JwtAuthGuard, RolesGuard, AppointmentAuthGuard)
+  @ApiUpdate('reschedule an appointment')
+  @ResponseMessage('appointment rescheduled')
   @Roles(UserRole.PATIENT)
-  async reschedule(@Req() req: any, @Body() dto: any) {
+  async reschedule(@Req() req: any, @Body() dto: RescheduleAppointmentDto) {
     if (!req.isOwningPatient) {
       throw new ForbiddenException(
         'Only the patient who booked can reschedule',
       );
     }
-    return this.appointmentsService.rescheduleAppointment(req.appointment, dto);
+    return this.appointmentsService.rescheduleAppointment(dto, req.appointment);
   }
 
   @Patch(':id/start')

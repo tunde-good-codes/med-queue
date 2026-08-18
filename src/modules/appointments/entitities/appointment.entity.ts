@@ -96,16 +96,15 @@ export class Appointment {
   reason: string;
 
   @Column({
-    type: 'float',
+    type: 'decimal',
     precision: 10,
     scale: 2,
     transformer: {
       to: (v: number) => v,
-      from: (v: string) => v,
+      from: (v: string | null) => v ? parseFloat(v) : 0,
     },
   })
-
-  fee:number
+  fee: number;
   @CreateDateColumn()
   createdAt: Date;
 

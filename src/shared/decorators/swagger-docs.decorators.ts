@@ -70,15 +70,20 @@ export const ApiUpdateNew = (summary: string, dto: any) =>
     ApiResponse({ status: 400, description: 'Bad request' }),
     ApiResponse({ status: 404, description: 'Not found' }),
   );
-
-export const ApiUpdate = (summary: string, dto: any) =>
-  applyDecorators(
+export const ApiUpdate = (summary: string, dto?: any) => {
+  const decorators: MethodDecorator[] = [
     ApiOperation({ summary }),
     ApiParam({ name: 'id', description: 'Resource ID' }),
-    ApiBody({ type: dto }),
     ApiResponse({ status: 200, description: 'Updated successfully' }),
     ApiResponse({ status: 404, description: 'Not found' }),
-  );
+  ];
+
+  if (dto) {
+    decorators.push(ApiBody({ type: dto }));
+  }
+
+  return applyDecorators(...decorators);
+};
 
 export const ApiDelete = (summary: string) =>
   applyDecorators(

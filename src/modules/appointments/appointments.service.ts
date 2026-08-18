@@ -187,16 +187,18 @@ export class AppointmentsService {
         doctorId,
         scheduleDate: today,
       },
-      order:{
-        scheduleDate:"asc"
-      }
+      order: {
+        scheduleDate: 'asc',
+      },
     });
 
-
     return {
-        appointments
-    }
+      appointments,
+    };
   }
+
+
+  
   private transitionStatus(
     appointment: Appointment,
     newStatus: AppointmentStatus,
