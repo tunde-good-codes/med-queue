@@ -229,7 +229,7 @@ export class AuthService {
         email: dto.email,
         password: hashPassword,
         phoneNumber: dto.phoneNumber,
-        role:UserRole.DOCTOR
+        role: UserRole.DOCTOR,
       });
 
       await queryRunner.manager.save(Auth, user);
@@ -657,6 +657,85 @@ export class AuthService {
       page,
       totalPages: Math.floor(total / limit),
       users,
+    };
+  }
+
+  async findAllDoctors(pagination: PaginationQueryDto) {
+    const { page = 1, limit = 4 } = pagination;
+
+    const skip = (page - 1) * limit;
+    const [doctors, total] = await this.authRepository.findAndCount({
+      where: {
+        role: UserRole.DOCTOR,
+      },
+      skip,
+      take: limit,
+      order: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!doctors || doctors.length === 0) {
+      throw new NotFoundException('no doctor found!');
+    }
+
+    return {
+      total,
+      totalPage: Math.ceil(total / limit),
+      limit,
+      doctors,
+    };
+  }
+  async findAllHospitals(pagination: PaginationQueryDto) {
+    const { page = 1, limit = 4 } = pagination;
+
+    const skip = (page - 1) * limit;
+    const [hospitals, total] = await this.authRepository.findAndCount({
+      where: {
+        role: UserRole.HOSPITAL,
+      },
+      skip,
+      take: limit,
+      order: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!hospitals || hospitals.length === 0) {
+      throw new NotFoundException('no doctor found!');
+    }
+
+    return {
+      total,
+      totalPage: Math.ceil(total / limit),
+      limit,
+      hospitals,
+    };
+  }
+  async findAllPatients(pagination: PaginationQueryDto) {
+    const { page = 1, limit = 4 } = pagination;
+
+    const skip = (page - 1) * limit;
+    const [patients, total] = await this.authRepository.findAndCount({
+      where: {
+        role: UserRole.PATIENT,
+      },
+      skip,
+      take: limit,
+      order: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!patients || patients.length === 0) {
+      throw new NotFoundException('no doctor found!');
+    }
+
+    return {
+      total,
+      totalPage: Math.ceil(total / limit),
+      limit,
+      patients,
     };
   }
 

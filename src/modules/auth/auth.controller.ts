@@ -155,6 +155,27 @@ export class AuthController {
   findAll(@Query() query: PaginationQueryDto) {
     return this.authService.findAllUser(query);
   }
+  @Get('users/doctors')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('all doctors fetched')
+  @ApiGetService('get all  doctors')
+  findAllDoctors(@Query() query: PaginationQueryDto) {
+    return this.authService.findAllDoctors(query);
+  }
+  @Get('users/patients')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('all patients fetched')
+  @ApiGetService('get all  patients')
+  findAllPatients(@Query() query: PaginationQueryDto) {
+    return this.authService.findAllPatients(query);
+  }
+  @Get('users/hospitals')
+  @UseGuards(JwtAuthGuard)
+  @ResponseMessage('all hospitals fetched')
+  @ApiGetService('get all  hospitals')
+  findAllHospitals(@Query() query: PaginationQueryDto) {
+    return this.authService.findAllHospitals(query);
+  }
 
   @ApiCreate('new hospital creation', RegisterHospitalDto)
   @ResponseMessage('hospital created successfully')

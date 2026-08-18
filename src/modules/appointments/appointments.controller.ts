@@ -93,6 +93,8 @@ export class AppointmentsController {
   }
 
   @Patch(':id/start')
+   @ApiUpdate('start an appointment')
+  @ResponseMessage('appointment started')
   @UseGuards(JwtAuthGuard, RolesGuard, AppointmentAuthGuard)
   @Roles(UserRole.DOCTOR)
   async start(@Req() req: any) {
@@ -106,6 +108,8 @@ export class AppointmentsController {
 
   @Patch(':id/complete')
   @UseGuards(JwtAuthGuard, RolesGuard, AppointmentAuthGuard)
+   @ApiUpdate('complete an appointment')
+  @ResponseMessage('appointment completed')
   @Roles(UserRole.DOCTOR)
   async complete(@Req() req: any) {
     if (!req.isOwningDoctor) {
@@ -118,6 +122,8 @@ export class AppointmentsController {
 
   @Patch(':id/no-show')
   @UseGuards(JwtAuthGuard, RolesGuard, AppointmentAuthGuard)
+   @ApiUpdate('absent on an appointment')
+  @ResponseMessage('patient absent on appointment ')
   @Roles(UserRole.DOCTOR)
   async noShow(@Req() req: any) {
     if (!req.isOwningDoctor) {
