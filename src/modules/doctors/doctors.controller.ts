@@ -44,6 +44,8 @@ export class DoctorsController {
     return this.doctorService.loggedInDoctor(req.user.id);
   }
 
+
+  
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ResponseMessage('single doctor data fetched')

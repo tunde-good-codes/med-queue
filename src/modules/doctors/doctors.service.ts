@@ -10,7 +10,7 @@ import { UpdateDoctorDto } from './dtos/updateDoctorDto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Schedule } from './schedule.entity';
 import { SetScheduleDto, UpdateScheduleDayDto } from './dtos/setScheduleDto';
-import { Auth } from '../auth/entities/auth.entity';
+import { Auth, UserRole } from '../auth/entities/auth.entity';
 
 @Injectable()
 export class DoctorsService {
@@ -36,10 +36,52 @@ export class DoctorsService {
     return { doctor };
   }
 
+  async findAllDoctors(pagination: PaginationQueryDto) {
+    const { page = 1, limit = 4 } = pagination;
+
+    const skip = (page - 1) * limit;
+    const [doctors, total] = await this.doctorRepository.findAndCount({
+      skip,
+      take: limit,
+      order: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!doctors || doctors.length === 0) {
+      throw new NotFoundException('no doctor found!');
+    }
+
+    return {
+      total,
+      totalPage: Math.ceil(total / limit),
+      limit,
+      doctors,
+    };
+  }
   async getDoctorById(id: string) {
     const doctor = await this.doctorRepository.findOne({
       where: {
         id,
+      },
+      relations: {
+        appointments: true,
+        schedules: true,
+      },
+      select: {
+        id: true,
+        hospitalId: true,
+        appointments: true,
+        userId: true,
+        licenseNumber: true,
+        specialty: true,
+        bio: true,
+        rating: true,
+        totalRatings: true,
+        consultationFee: true,
+        isAvailable: true,
+        yearsOfExperience: true,
+        schedules: true,
       },
     });
 
@@ -104,7 +146,7 @@ export class DoctorsService {
   async updateDoctor(doctor: Doctor, dto: UpdateDoctorDto) {
     const newDoc = await this.doctorRepository.findOne({
       where: {
-        id:doctor.id
+        id: doctor.id,
       },
     });
 

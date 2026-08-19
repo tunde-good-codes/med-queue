@@ -29,5 +29,5 @@ export class RegisterUserDto {
 
   @IsString()
   @IsOptional()
-  phone?: string;
+  phoneNumber?: string;
 }

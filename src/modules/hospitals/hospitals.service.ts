@@ -36,9 +36,6 @@ export class HospitalsService {
 
     const skip = (page - 1) * limit;
     const [hospitals, total] = await this.hospitalRepository.findAndCount({
-      // where: {
-      //   verificationStatus: HospitalVerificationStatus.VERIFIED,
-      // },
       order: { createdAt: 'desc' },
       skip,
       take: limit,
@@ -64,7 +61,7 @@ export class HospitalsService {
       },
     });
 
-    if (!hospital ) {
+    if (!hospital) {
       throw new ConflictException('No hospital matched with this id');
     }
 
@@ -117,6 +114,29 @@ export class HospitalsService {
     return await this.hospitalRepository.save(hospital);
   }
 
+  async findAllHospitals(pagination: PaginationQueryDto) {
+    const { page = 1, limit = 4 } = pagination;
+
+    const skip = (page - 1) * limit;
+    const [hospitals, total] = await this.hospitalRepository.findAndCount({
+      skip,
+      take: limit,
+      order: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!hospitals || hospitals.length === 0) {
+      throw new NotFoundException('no doctor found!');
+    }
+
+    return {
+      total,
+      totalPage: Math.ceil(total / limit),
+      limit,
+      hospitals,
+    };
+  }
   async verifyHospital(id: string) {
     const hospital = await this.hospitalRepository.findOne({
       where: {
@@ -249,7 +269,7 @@ export class HospitalsService {
       },
     });
 
-    if (!department ) {
+    if (!department) {
       throw new NotFoundException('No department found!');
     }
 
@@ -327,13 +347,14 @@ export class HospitalsService {
   async myHospital(userId: string) {
     const authHospital = await this.hospitalRepository.findOne({
       where: {
-        userId},
+        userId,
+      },
     });
 
     if (!authHospital) {
       throw new ConflictException('Unauthorized to view this hospital');
     }
 
-    return {hospital:authHospital}
+    return { hospital: authHospital };
   }
 }

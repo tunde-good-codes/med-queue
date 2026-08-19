@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -19,6 +20,7 @@ import {
   PaymentStatus,
 } from './appointment.types';
 import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
+import { log } from 'console';
 
 @Injectable()
 export class AppointmentsService {
@@ -32,6 +34,7 @@ export class AppointmentsService {
   ) {}
 
   async createAppointment(patientId: string, dto: CreateAppointmentDto) {
+    const logger = new Logger("appointment - log")
     const availableDoctor = await this.doctorRepository.findOne({
       where: {
         id: dto.doctorId,
@@ -42,11 +45,12 @@ export class AppointmentsService {
       throw new NotFoundException('doctor not available');
     }
 
-    if (!availableDoctor?.isAvailable) {
-      throw new BadRequestException('doctor is not available at this time');
-    }
+    // if (!availableDoctor.isAvailable) {
+    //   throw new BadRequestException('doctor is not available at this time');
+    // }
 
     const dayOfWeek = new Date(dto.scheduledDate).getUTCDay();
+    logger.log(dayOfWeek);
 
     const schedule = await this.scheduleRepository.findOne({
       where: {
@@ -197,8 +201,6 @@ export class AppointmentsService {
     };
   }
 
-
-  
   private transitionStatus(
     appointment: Appointment,
     newStatus: AppointmentStatus,

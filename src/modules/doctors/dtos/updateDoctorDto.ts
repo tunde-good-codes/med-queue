@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsEmail,
   IsEnum,
   IsNumber,
@@ -25,6 +26,10 @@ export class UpdateDoctorDto {
   @IsOptional()
   @IsString()
   phoneNumber?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isAvailable?: boolean;
 
   @IsOptional()
   @IsUUID()

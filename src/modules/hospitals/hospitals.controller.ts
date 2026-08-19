@@ -86,6 +86,16 @@ export class HospitalsController {
     return this.hospitalService.verifyHospital(id);
   }
 
+
+
+    // @Get('')
+    // @UseGuards(JwtAuthGuard)
+    // @ResponseMessage('all hospitals fetched')
+    // @ApiGetService('get all  hospitals')
+    // findAllHospitals(@Query() query: PaginationQueryDto) {
+    //   return this.hospitalService.findAllHospitals(query);
+    // }
+  
   @Delete(':id')
   @ResponseMessage('hospital deleted')
   @UseGuards(JwtAuthGuard, HospitalOwnershipGuard, RolesGuard)

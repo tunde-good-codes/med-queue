@@ -32,16 +32,16 @@ import {
 } from 'src/shared/decorators/swagger-docs.decorators';
 import { ResponseMessage } from 'src/shared/decorators/response.message.decorator';
 
-@ApiTags('Appointments')
+@ApiTags('Appointments service')
 @Controller('appointments')
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
-  @Post()
+  @Post("create-appointment")
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiCreate('create a new appointment with a doctor', CreateAppointmentDto)
   @ResponseMessage('appointment created')
-  @Roles(UserRole.PATIENT)
+  @Roles(UserRole.PATIENT, UserRole.ADMIN)
   async book(@Req() req: any, @Body() dto: CreateAppointmentDto) {
     return this.appointmentsService.createAppointment(req.user.id, dto);
   }
