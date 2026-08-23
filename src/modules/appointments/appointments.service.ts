@@ -13,6 +13,7 @@ import { Appointment } from './entitities/appointment.entity';
 import {
   CreateAppointmentDto,
   RescheduleAppointmentDto,
+  UpdateAppointmentDto,
 } from './dto/create-appointment-dto';
 import {
   AppointmentStatus,
@@ -34,7 +35,7 @@ export class AppointmentsService {
   ) {}
 
   async createAppointment(patientId: string, dto: CreateAppointmentDto) {
-    const logger = new Logger("appointment - log")
+    const logger = new Logger('appointment - log');
     const availableDoctor = await this.doctorRepository.findOne({
       where: {
         id: dto.doctorId,
@@ -45,9 +46,9 @@ export class AppointmentsService {
       throw new NotFoundException('doctor not available');
     }
 
-    // if (!availableDoctor.isAvailable) {
-    //   throw new BadRequestException('doctor is not available at this time');
-    // }
+    if (!availableDoctor.isAvailable) {
+      throw new BadRequestException('doctor is not available at this time');
+    }
 
     const dayOfWeek = new Date(dto.scheduledDate).getUTCDay();
     logger.log(dayOfWeek);
@@ -99,6 +100,19 @@ export class AppointmentsService {
     await this.appointmentRepository.save(appointment);
 
     return { appointment };
+  }
+  async deleteAppointment(id: string) {
+    const result = await this.appointmentRepository.delete({
+      id,
+    });
+
+    if (result.affected === 0) {
+      throw new BadRequestException('error deleting appointment');
+    }
+
+    return {
+      message: 'appointment deleted',
+    };
   }
 
   async rescheduleAppointment(
@@ -201,6 +215,25 @@ export class AppointmentsService {
     };
   }
 
+  async updateAppointment(patientId: string, dto: UpdateAppointmentDto) {
+    const appointment = await this.appointmentRepository.findOne({
+      where: {
+        patientId,
+      },
+    });
+
+    if (!appointment) {
+      throw new NotFoundException(
+        'appointment not found found for this patient',
+      );
+    }
+
+    // if(appointment){
+    //         appointment?.doctorId = dto.doctorId
+    //         appointment.appointmentStatus = dto.appointmentStatus,
+
+    // }
+  }
   private transitionStatus(
     appointment: Appointment,
     newStatus: AppointmentStatus,

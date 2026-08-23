@@ -213,6 +213,12 @@ export class DoctorsService {
       }),
     );
 
+    if (!doctor.isAvailable) {
+      doctor.isAvailable = true;
+
+      await this.doctorRepository.save(doctor);
+    }
+
     await this.scheduleRepository.save(schedules);
 
     return { schedules };
@@ -234,6 +240,11 @@ export class DoctorsService {
       throw new NotFoundException('no schedule for the specified date');
     }
 
+    if (!doctor.isAvailable) {
+      doctor.isAvailable = true;
+
+      await this.doctorRepository.save(doctor);
+    }
     const merged = {
       ...schedule,
       ...dto,

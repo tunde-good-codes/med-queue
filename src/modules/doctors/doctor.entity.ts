@@ -14,7 +14,6 @@ import { Auth } from '../auth/entities/auth.entity';
 import { Hospital } from '../hospitals/entities/hospital.entity';
 import { Department } from '../hospitals/entities/department.entity';
 import { Specialty } from './doctor.types';
-import { number } from 'joi';
 import { Schedule } from './schedule.entity';
 import { Appointment } from '../appointments/entitities/appointment.entity';
 

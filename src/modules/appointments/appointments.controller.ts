@@ -31,6 +31,7 @@ import {
   ApiUpdate,
 } from 'src/shared/decorators/swagger-docs.decorators';
 import { ResponseMessage } from 'src/shared/decorators/response.message.decorator';
+import { DoctorAuthGuard } from "src/shared/guards/doctor.guard";
 
 @ApiTags('Appointments service')
 @Controller('appointments')
@@ -55,13 +56,13 @@ export class AppointmentsController {
     return this.appointmentsService.findMineAppointment(req.user.id, query);
   }
 
-  @Get('doctor/today')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('doctors/today')
+  @UseGuards(JwtAuthGuard, RolesGuard, DoctorAuthGuard)
   @ApiGetService("fetched all doctor's  appointment today")
   @ResponseMessage('Get my appointment successfully')
   @Roles(UserRole.DOCTOR)
   async findDoctorToday(@Req() req: any) {
-    return this.appointmentsService.findDoctorAppointmentToday(req.user.id);
+    return this.appointmentsService.findDoctorAppointmentToday(req.doctor.id);
   }
 
   @Get(':id')
@@ -71,7 +72,8 @@ export class AppointmentsController {
   }
 
   @Patch(':id/cancel')
-  @UseGuards(JwtAuthGuard, AppointmentAuthGuard)
+  @UseGuards(JwtAuthGuard, AppointmentAuthGuard, RolesGuard)
+  @Roles(UserRole.PATIENT, UserRole.ADMIN)
   @ApiUpdate('cancel an appointment')
   @ResponseMessage('appointment cancelled')
   async cancel(@Req() req: any) {
@@ -96,7 +98,7 @@ export class AppointmentsController {
    @ApiUpdate('start an appointment')
   @ResponseMessage('appointment started')
   @UseGuards(JwtAuthGuard, RolesGuard, AppointmentAuthGuard)
-  @Roles(UserRole.DOCTOR)
+  @Roles(UserRole.PATIENT)
   async start(@Req() req: any) {
     if (!req.isOwningDoctor) {
       throw new ForbiddenException(
