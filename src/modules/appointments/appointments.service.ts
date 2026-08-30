@@ -7,13 +7,13 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Schedule } from '../doctors/schedule.entity';
-import { In, Not, Repository } from 'typeorm';
+import { In, LessThan, Not, Repository } from 'typeorm';
 import { Doctor } from '../doctors/doctor.entity';
 import { Appointment } from './entitities/appointment.entity';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import {
   CreateAppointmentDto,
   RescheduleAppointmentDto,
-  UpdateAppointmentDto,
 } from './dto/create-appointment-dto';
 import {
   AppointmentStatus,
@@ -21,7 +21,6 @@ import {
   PaymentStatus,
 } from './appointment.types';
 import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
-import { log } from 'console';
 
 @Injectable()
 export class AppointmentsService {
@@ -33,6 +32,7 @@ export class AppointmentsService {
     @InjectRepository(Appointment)
     private readonly appointmentRepository: Repository<Appointment>,
   ) {}
+  private readonly logger = new Logger('appointment-service');
 
   async createAppointment(patientId: string, dto: CreateAppointmentDto) {
     const logger = new Logger('appointment - log');
@@ -100,6 +100,32 @@ export class AppointmentsService {
     await this.appointmentRepository.save(appointment);
 
     return { appointment };
+  }
+
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async cancelUnpaidAppointment() {
+    const cutoff = new Date(Date.now() - 30 * 60 * 1000);
+    const unpaidAppointments = await this.appointmentRepository.find({
+      where: {
+        appointmentStatus: AppointmentStatus.PENDING,
+        paymentStatus: PaymentStatus.UNPAID,
+        createdAt: LessThan(cutoff),
+      },
+    });
+
+    if (unpaidAppointments.length === 0) {
+      return;
+    }
+
+    for (const appointment of unpaidAppointments) {
+      appointment.appointmentStatus = AppointmentStatus.CANCELLED;
+    }
+
+    await this.appointmentRepository.save(unpaidAppointments);
+    this.logger.log(`appointment cancelled for ${unpaidAppointments.length}`);
+    return {
+      message: 'appointment cancelled after being unpaid',
+    };
   }
   async deleteAppointment(id: string) {
     const result = await this.appointmentRepository.delete({
@@ -215,24 +241,14 @@ export class AppointmentsService {
     };
   }
 
-  async updateAppointment(patientId: string, dto: UpdateAppointmentDto) {
-    const appointment = await this.appointmentRepository.findOne({
-      where: {
-        patientId,
-      },
+  async updateAppointment(id: string, status: AppointmentStatus) {
+    const appointment = await this.appointmentRepository.update(id, {
+      appointmentStatus: status,
     });
 
-    if (!appointment) {
-      throw new NotFoundException(
-        'appointment not found found for this patient',
-      );
-    }
-
-    // if(appointment){
-    //         appointment?.doctorId = dto.doctorId
-    //         appointment.appointmentStatus = dto.appointmentStatus,
-
-    // }
+    return {
+      message: 'appointment updated',
+    };
   }
   private transitionStatus(
     appointment: Appointment,
