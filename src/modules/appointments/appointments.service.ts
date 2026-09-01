@@ -16,9 +16,9 @@ import {
   RescheduleAppointmentDto,
 } from './dto/create-appointment-dto';
 import {
+  AppointmentPaymentStatus,
   AppointmentStatus,
   AppointmentTransitions,
-  PaymentStatus,
 } from './appointment.types';
 import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
 
@@ -108,7 +108,7 @@ export class AppointmentsService {
     const unpaidAppointments = await this.appointmentRepository.find({
       where: {
         appointmentStatus: AppointmentStatus.PENDING,
-        paymentStatus: PaymentStatus.UNPAID,
+        paymentStatus: AppointmentPaymentStatus.UNPAID,
         createdAt: LessThan(cutoff),
       },
     });

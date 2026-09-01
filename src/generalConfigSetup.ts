@@ -1,9 +1,9 @@
-
 import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ResponseInterceptor } from './shared/interceptors/response.interceptor';
 
+import * as bodyParser from 'body-parser';
 
 interface AppOptions {
   serviceName: string;
@@ -21,13 +21,18 @@ export const generalConfigSetup = (
       transform: true,
     }),
   );
-const log = new Logger("app-setup")
   const prefix = options.prefix ?? 'api/v1';
   const reflector = app.get(Reflector);
 
   app.useGlobalInterceptors(new ResponseInterceptor(reflector));
   app.setGlobalPrefix(prefix);
-
+  app.use(
+    bodyParser.json({
+      verify: (req: any, res, buf) => {
+        req.rawBody = buf;
+      },
+    }),
+  );
   const config = new DocumentBuilder()
     .setTitle('MedQueue API')
     .setDescription('Hospital Appointment & Queue Management Platform Backend')

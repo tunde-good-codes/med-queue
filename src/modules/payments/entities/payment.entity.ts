@@ -72,6 +72,14 @@ export class Payment {
   })
   paidAt: Date;
 
+@Index({unique:true})
+@Column({
+  type:"varchar",
+  unique:true
+})
+reference:string
+
+
   @Column({
     type: 'enum',
     enum: PaymentProvider,

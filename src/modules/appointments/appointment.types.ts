@@ -7,10 +7,11 @@ export enum AppointmentStatus {
   NO_SHOW = 'no_show',
 }
 
-export enum PaymentStatus {
+export enum AppointmentPaymentStatus {
   UNPAID = 'unpaid',
   PAID = 'paid',
   REFUNDED = 'refunded',
+  PENDING = 'pending',
 }
 
 export const AppointmentTransitions: Record<
