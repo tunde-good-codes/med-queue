@@ -5,4 +5,4 @@ import { PaystackService } from './paystack.service';
   providers: [PaystackService],
   exports: [PaystackService],
 })
-export class PaymentModule {}
+export class PaystackModule {}
