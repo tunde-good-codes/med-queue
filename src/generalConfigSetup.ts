@@ -26,13 +26,7 @@ export const generalConfigSetup = (
 
   app.useGlobalInterceptors(new ResponseInterceptor(reflector));
   app.setGlobalPrefix(prefix);
-  app.use(
-    bodyParser.json({
-      verify: (req: any, res, buf) => {
-        req.rawBody = buf;
-      },
-    }),
-  );
+ 
   const config = new DocumentBuilder()
     .setTitle('MedQueue API')
     .setDescription('Hospital Appointment & Queue Management Platform Backend')

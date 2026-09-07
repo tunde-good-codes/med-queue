@@ -17,6 +17,7 @@ import { MailModule } from './infrastructure/mail/mail.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullMqModule } from "./infrastructure/bullmq/bullmq.module";
 @Module({
   imports: [
     HospitalsModule,
@@ -31,7 +32,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     RatingsModule,
     RedisModule,
     AuthModule,
-    MailModule,
+    MailModule,BullMqModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: `.env`,

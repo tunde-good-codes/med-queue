@@ -40,13 +40,7 @@ export class Payment {
     type: 'uuid',
   })
   patientId: string;
-  @Index({
-    unique: true,
-  })
-  @Column({
-    type: 'text',
-  })
-  reason: string;
+  
 
   @Column({
     type: 'decimal',

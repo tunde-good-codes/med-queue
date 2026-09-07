@@ -10,7 +10,8 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { AppointmentStatus, PaymentStatus } from '../appointment.types';
+import { AppointmentPaymentStatus, AppointmentStatus } from '../appointment.types';
+
 
 @Entity('appointment')
 export class Appointment {
@@ -79,10 +80,10 @@ export class Appointment {
 
   @Column({
     type: 'enum',
-    enum: PaymentStatus,
-    default: PaymentStatus.UNPAID,
+    enum: AppointmentPaymentStatus,
+    default: AppointmentPaymentStatus.UNPAID,
   })
-  paymentStatus: PaymentStatus;
+  paymentStatus: AppointmentPaymentStatus;
 
   @Column({
     type: 'text',

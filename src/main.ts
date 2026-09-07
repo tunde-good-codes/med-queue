@@ -9,8 +9,7 @@ async function bootstrap() {
 
   process.title = 'main-service';
 
-  const app = await NestFactory.create(AppModule);
-
+const app = await NestFactory.create(AppModule, { rawBody: true });
   generalConfigSetup(app, {
     serviceName: 'main-service',
     prefix: 'api/v1',
