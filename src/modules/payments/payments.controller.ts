@@ -20,7 +20,8 @@ import { RolesGuard } from 'src/shared/guards/roles.guard';
 import { Roles } from 'src/shared/decorators/roles.decorator';
 import { UserRole } from 'src/modules/auth/entities/auth.entity';
 import { PaginationQueryDto } from 'src/shared/dto/pagination-query.dto';
-import { PaymentService } from "./payments.service";
+import { PaymentService } from './payments.service';
+import { ApiGetService } from 'src/shared/decorators/swagger-docs.decorators';
 
 @Controller('payments')
 export class PaymentsController {
@@ -30,22 +31,36 @@ export class PaymentsController {
   ) {}
 
   @Post('initialize/:appointmentId')
+  @ApiGetService('initialize a new payment for appointment')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PATIENT)
-  async initialize(@Req() req: any, @Param('appointmentId', ParseUUIDPipe) appointmentId: string) {
-    return this.paymentsService.initializeTransaction(req.user.id, appointmentId, req.user.email);
+  async initialize(
+    @Req() req: any,
+    @Param('appointmentId', ParseUUIDPipe) appointmentId: string,
+  ) {
+    return this.paymentsService.initializeTransaction(
+      req.user.id,
+      appointmentId,
+      req.user.email,
+    );
   }
 
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
-  async webhook(@Req() req: Request, @Headers('x-paystack-signature') signature: string) {
+  async webhook(
+    @Req() req: Request,
+    @Headers('x-paystack-signature') signature: string,
+  ) {
     const rawBody = (req as any).rawBody;
 
     if (!signature || !rawBody) {
       throw new BadRequestException('Missing signature or body');
     }
 
-    const isValid = this.paystackService.verifyWebhookCredentials(rawBody, signature);
+    const isValid = this.paystackService.verifyWebhookCredentials(
+      rawBody,
+      signature,
+    );
     if (!isValid) {
       throw new BadRequestException('Invalid webhook signature');
     }
@@ -60,6 +75,8 @@ export class PaymentsController {
   }
 
   @Get('history')
+    @ApiGetService('get a  payment history for appointment')
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PATIENT)
   async history(@Req() req: any, @Query() query: PaginationQueryDto) {
@@ -67,8 +84,9 @@ export class PaymentsController {
   }
 
   @Get(':id')
+  @ApiGetService('get a  payment with id for appointment')
   @UseGuards(JwtAuthGuard)
   async findOne(@Req() req: any, @Param('id', ParseUUIDPipe) id: string) {
-    return this.paymentsService.findOne(id, req.user.id, req.user.role);
+    return this.paymentsService.findOne(id, req.user.id);
   }
 }

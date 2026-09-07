@@ -167,12 +167,12 @@ export class PaymentService {
   }
 
 
-    async findOne(id: string, requesterId: string, requesterRole: string) {
+    async findOne(id: string, requesterId: string) {
     const payment = await this.paymentRepository.findOne({ where: { id } });
     if (!payment) {
       throw new NotFoundException('Payment not found');
     }
-    if (requesterRole !== 'admin' && payment.patientId !== requesterId) {
+    if (payment.patientId !== requesterId) {
       throw new ForbiddenException('You do not have access to this payment');
     }
     return payment;
