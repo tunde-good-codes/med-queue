@@ -1,4 +1,3 @@
-// src/modules/hospitals/guards/hospital-ownership.guard.ts
 import {
   CanActivate,
   ExecutionContext,

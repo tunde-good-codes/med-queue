@@ -11,5 +11,5 @@ export const QUEUE_TRANSITIONS: Record<QueueStatus, QueueStatus[]> = {
   [QueueStatus.CALLED]: [QueueStatus.IN_PROGRESS, QueueStatus.SKIPPED],
   [QueueStatus.IN_PROGRESS]: [QueueStatus.DONE],
   [QueueStatus.DONE]: [],
-  [QueueStatus.SKIPPED]: [QueueStatus.WAITING], // patient returns, re-queued at end
+  [QueueStatus.SKIPPED]: [QueueStatus.WAITING],
 };
